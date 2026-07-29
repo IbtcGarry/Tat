@@ -1,0 +1,117 @@
+#stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: #ffffff;
+  overflow: hidden;
+  perspective: 800px; /* lets the turn-around read as a spin, not a flat squish */
+}
+
+/* #mover is the shared anchor: it carries the walk position, the turn-around
+   spin, and the final fade. Everything inside it (bill, walk pose, turn pose)
+   rides along together. Children self-center on this anchor point via their
+   own translateX(-50%), so the anchor's target x-position for "dead center
+   of the screen" is simply 50vw -- true regardless of how big/small he is. */
+#mover {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  animation: moverAnim 8s ease-in-out forwards;
+}
+
+@keyframes moverAnim {
+  0%   { transform: translateX(-200px) rotateY(0deg);   opacity: 1; }
+  78%  { transform: translateX(50vw) rotateY(0deg);   opacity: 1; }
+  92%  { transform: translateX(50vw) rotateY(360deg); opacity: 1; }
+  100% { transform: translateX(50vw) rotateY(360deg); opacity: 0; }
+}
+
+/* ---------- walk pose (6-frame walk cycle sheet) ---------- */
+/* fixed pixel sizes -- smaller than the original (304x416 -> 182x250),
+   same ~0.6 scale-down applied to every element below so proportions
+   and spacing all stay consistent with each other */
+#walkPose {
+  position: absolute;
+  left: 0;
+  bottom: 23vh;
+  transform: translateX(-50%);
+  width: 182px;
+  height: 250px;
+  background-repeat: no-repeat;
+  background-size: 1092px 250px; /* 6 frames * 182px each */
+  animation:
+    walkCycle 0.53s steps(6) infinite,
+    walkPoseFade 8s linear forwards;
+}
+
+@keyframes walkCycle {
+  from { background-position-x: 0; }
+  to   { background-position-x: -1092px; }
+}
+
+@keyframes walkPoseFade {
+  0%   { opacity: 1; }
+  76%  { opacity: 1; }
+  80%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* ---------- turn pose (arms-up finale pose) ---------- */
+#turnPose {
+  position: absolute;
+  left: 0;
+  bottom: 30vh;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 191px;
+  background-repeat: no-repeat;
+  background-size: 180px 191px;
+  animation: turnPoseFade 8s linear forwards;
+}
+
+@keyframes turnPoseFade {
+  0%   { opacity: 0; }
+  76%  { opacity: 0; }
+  80%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+/* ---------- the dollar bill, held overhead for the entire animation ---------- */
+#dollar {
+  position: absolute;
+  left: 0;
+  bottom: 50vh; /* 50vh, but using Tailwind's arbitrary value syntax */
+  transform: translateX(-50%);
+  width: 108px;
+  height: 46px;
+  background-repeat: no-repeat;
+  background-size: 108px 46px;
+  animation: bob 0.93s ease-in-out infinite alternate;
+}
+
+@keyframes bob {
+  from { transform: translateX(-50%) translateY(0); }
+  to   { transform: translateX(-50%) translateY(-5px); }
+}
+
+/* ---------- ground shadow, tracks the walk + fades with everything else ---------- */
+#shadow {
+  position: absolute;
+  bottom: 42px;
+  left: 0;
+  width: 108px;
+  height: 15px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.18);
+  filter: blur(3px);
+  animation: shadowAnim 8s ease-in-out forwards;
+}
+
+@keyframes shadowAnim {
+  0%   { transform: translateX(-200px); opacity: 1; }
+  78%  { transform: translateX(50vw); opacity: 1; }
+  100% { transform: translateX(50vw); opacity: 0; }
+}

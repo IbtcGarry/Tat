@@ -1,0 +1,10 @@
+/* Vite's default template constrains #root (max-width, centered margin,
+   padding, centered text) -- that fights with Loader/Home, which are both
+   meant to be full-bleed 100vw/100vh screens. Reset it with Tailwind's
+   @apply so #root just gets out of the way. */
+@reference "tailwindcss";
+ 
+#root {
+  @apply w-screen h-screen m-0 p-0 max-w-none text-left;
+}
+ 
