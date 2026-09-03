@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 
-import { MediaSlot } from "@/components/media-slot";
+import { listRecentWork } from "@/lib/content";
 import heroTown from "@/assets/hero-town.jpg";
 
 export const Route = createFileRoute("/")({
@@ -15,20 +16,20 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Toosh Tatoos — Bizarre Tattoo Studio" },
       {
         property: "og:description",
-        content: "Bold outlines, screentone shading, unbreakable design. Tattoo studio.",
+        content:
+          "Bold outlines, screentone shading, unbreakable design. Tattoo studio.",
       },
     ],
   }),
   component: Index,
 });
 
-const works = [
-  { sample: true, title: "Golden Arrow", meta: "Forearm · blackwork + gold" },
-  { sample: false, title: "Crazy Diamond", meta: "Full back · 3 sessions" },
-  { sample: false, title: "Kira Roses", meta: "Hand · pink & thorn" },
-];
-
 function Index() {
+  const { data: works = [], isLoading } = useQuery({
+    queryKey: ["recent_work"],
+    queryFn: listRecentWork,
+  });
+
   return (
     <main>
       {/* HERO */}
@@ -66,7 +67,8 @@ function Index() {
       {/* MARQUEE STRIP */}
       <section className="skew-strip -mt-6 border-y-4 border-ink bg-primary py-3">
         <p className="whitespace-nowrap text-center font-display text-xl uppercase tracking-[0.35em] text-primary-foreground">
-          ゴゴゴゴ · bold lines · unbreakable · ゴゴゴゴ · bold lines · unbreakable
+          ゴゴゴゴ · bold lines · unbreakable · ゴゴゴゴ · bold lines ·
+          unbreakable
         </p>
       </section>
 
@@ -74,23 +76,33 @@ function Index() {
       <section className="halftone bg-background">
         <div className="mx-auto max-w-6xl px-5 py-24">
           <h2 className="text-5xl text-primary">RECENT WORK</h2>
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
-            {works.map((w) => (
-              <article key={w.title} className="panel">
-                <MediaSlot
-                  sample={w.sample}
-                  alt={w.title}
-                  className="h-80 w-full border-b-4 border-ink"
-                />
-                <div className="p-5">
-                  <h3 className="text-2xl text-secondary">{w.title}</h3>
-                  <p className="mt-1 text-sm uppercase tracking-[0.15em] text-muted-foreground">
-                    {w.meta}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
+          {works.length > 0 ? (
+            <div className="mt-12 grid gap-8 md:grid-cols-3">
+              {works.map((w) => (
+                <article key={w.id} className="panel">
+                  <img
+                    src={w.image_url}
+                    alt={w.title}
+                    className="h-80 w-full border-b-4 border-ink object-cover"
+                  />
+                  <div className="p-5">
+                    <h3 className="text-2xl text-secondary">{w.title}</h3>
+                    {w.meta && (
+                      <p className="mt-1 text-sm uppercase tracking-[0.15em] text-muted-foreground">
+                        {w.meta}
+                      </p>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-12 border-4 border-ink bg-muted px-5 py-8 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              {isLoading
+                ? "Loading work…"
+                : "No work posted yet — check back soon."}
+            </p>
+          )}
           <Link
             to="/gallery"
             className="mt-12 inline-block border-b-4 border-primary font-display text-lg uppercase text-primary"

@@ -15,8 +15,11 @@ const authNav = [
   { to: "/signup", label: "Sign Up" },
 ] as const;
 
+const linkClass =
+  "px-3 py-2 text-foreground/70 transition-colors hover:text-primary";
+
 export function SiteHeader() {
-  const { user, loading } = useAuth();
+  const { user, profile, isAdmin, loading } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 border-b-4 border-ink bg-ink/95 backdrop-blur">
@@ -30,7 +33,7 @@ export function SiteHeader() {
             <Link
               key={item.to}
               to={item.to}
-              className="px-3 py-2 text-foreground/70 transition-colors hover:text-primary"
+              className={linkClass}
               activeProps={{ className: "px-3 py-2 text-primary" }}
               activeOptions={{ exact: item.to === "/" }}
             >
@@ -38,9 +41,24 @@ export function SiteHeader() {
             </Link>
           ))}
 
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className="border-2 border-primary px-3 py-2 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+              activeProps={{
+                className:
+                  "border-2 border-primary bg-primary px-3 py-2 text-primary-foreground",
+              }}
+            >
+              Admin
+            </Link>
+          )}
+
           {loading ? null : user ? (
             <span className="flex items-center gap-2 pl-3">
-              <span className="text-primary">Sup {displayName(user)}</span>
+              <span className="text-primary">
+                Sup {displayName(user, profile)}
+              </span>
               <button
                 type="button"
                 onClick={() => void supabase.auth.signOut()}
@@ -54,7 +72,7 @@ export function SiteHeader() {
               <Link
                 key={item.to}
                 to={item.to}
-                className="px-3 py-2 text-foreground/70 transition-colors hover:text-primary"
+                className={linkClass}
                 activeProps={{ className: "px-3 py-2 text-primary" }}
               >
                 {item.label}

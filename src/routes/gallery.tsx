@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 
-import { MediaSlot } from "@/components/media-slot";
+import { listGallery } from "@/lib/content";
 
 export const Route = createFileRoute("/gallery")({
   head: () => ({
@@ -14,23 +15,20 @@ export const Route = createFileRoute("/gallery")({
       { property: "og:title", content: "Gallery — Toosh Tatoos" },
       {
         property: "og:description",
-        content: "Blackwork, screentone shading and saturated color tattoo pieces.",
+        content:
+          "Blackwork, screentone shading and saturated color tattoo pieces.",
       },
     ],
   }),
   component: Gallery,
 });
 
-const pieces = [
-  { sample: true, title: "Golden Arrow", meta: "Forearm · 5 hours" },
-  { sample: false, title: "Crazy Diamond", meta: "Full back · 3 sessions" },
-  { sample: false, title: "Kira Roses", meta: "Hand · 4 hours" },
-  { sample: false, title: "Bad Company", meta: "Ribs · blackwork" },
-  { sample: false, title: "Sheer Heart", meta: "Sternum · color" },
-  { sample: false, title: "Stray Cat", meta: "Calf · linework" },
-];
-
 function Gallery() {
+  const { data: pieces = [], isLoading } = useQuery({
+    queryKey: ["gallery_items"],
+    queryFn: listGallery,
+  });
+
   return (
     <main className="halftone bg-background">
       <div className="mx-auto max-w-6xl px-5 py-20">
@@ -38,28 +36,39 @@ function Gallery() {
           GALLERY
         </h1>
         <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-          Six recent pieces. Everything is drawn in-house — no flash sheets, no
-          copies of someone else's work.
+          Every piece is drawn in-house — no flash sheets, no copies of someone
+          else's work.
         </p>
-        <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {pieces.map((p, i) => (
-            <figure key={`${p.title}-${i}`} className="panel">
-              <MediaSlot
-                sample={p.sample}
-                alt={p.title}
-                className="h-72 w-full border-b-4 border-ink"
-              />
-              <figcaption className="p-4">
-                <span className="block font-display text-xl text-secondary">
-                  {p.title}
-                </span>
-                <span className="text-sm uppercase tracking-[0.15em] text-muted-foreground">
-                  {p.meta}
-                </span>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
+
+        {pieces.length > 0 ? (
+          <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {pieces.map((p) => (
+              <figure key={p.id} className="panel">
+                <img
+                  src={p.image_url}
+                  alt={p.title}
+                  className="h-72 w-full border-b-4 border-ink object-cover"
+                />
+                <figcaption className="p-4">
+                  <span className="block font-display text-xl text-secondary">
+                    {p.title}
+                  </span>
+                  {p.meta && (
+                    <span className="text-sm uppercase tracking-[0.15em] text-muted-foreground">
+                      {p.meta}
+                    </span>
+                  )}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-14 border-4 border-ink bg-muted px-5 py-10 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            {isLoading
+              ? "Loading gallery…"
+              : "The gallery is empty right now — check back soon."}
+          </p>
+        )}
       </div>
     </main>
   );

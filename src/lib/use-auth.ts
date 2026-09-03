@@ -1,33 +1,75 @@
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
-import { supabase } from "./supabase";
+import { supabase, isSupabaseConfigured } from "./supabase";
 
-/** Tracks the current Supabase auth user, kept in sync via onAuthStateChange. */
-export function useAuth() {
+export type Profile = {
+  id: string;
+  username: string | null;
+  role: string;
+};
+
+type AuthState = {
+  user: User | null;
+  profile: Profile | null;
+  isAdmin: boolean;
+  loading: boolean;
+};
+
+async function fetchProfile(userId: string): Promise<Profile | null> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, username, role")
+    .eq("id", userId)
+    .maybeSingle();
+  return (data as Profile | null) ?? null;
+}
+
+/** Tracks the current Supabase auth user + profile, kept in sync via onAuthStateChange. */
+export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
+    if (!isSupabaseConfigured) {
       setLoading(false);
-    });
+      return;
+    }
+
+    let active = true;
+
+    async function sync(nextUser: User | null) {
+      if (!active) return;
+      setUser(nextUser);
+      setProfile(nextUser ? await fetchProfile(nextUser.id) : null);
+      if (active) setLoading(false);
+    }
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => sync(data.session?.user ?? null));
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      void sync(session?.user ?? null);
     });
 
-    return () => data.subscription.unsubscribe();
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
   }, []);
 
-  return { user, loading };
+  const isAdmin = profile?.role === "admin" || profile?.role === "master";
+
+  return { user, profile, isAdmin, loading };
 }
 
 /** Best display name for a user: their chosen username, falling back to email. */
-export function displayName(user: User): string {
-  const username = user.user_metadata?.["username"];
-  return typeof username === "string" && username
-    ? username
-    : (user.email ?? "friend");
+export function displayName(user: User, profile?: Profile | null): string {
+  const fromProfile = profile?.username;
+  if (fromProfile) return fromProfile;
+  const fromMeta = user.user_metadata?.["username"];
+  if (typeof fromMeta === "string" && fromMeta) return fromMeta;
+  return user.email ?? "friend";
 }

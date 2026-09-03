@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { MediaSlot } from "@/components/media-slot";
+import { createBooking } from "@/lib/content";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -22,15 +24,29 @@ export const Route = createFileRoute("/contact")({
   component: Contact,
 });
 
+const textFields = [
+  { id: "name", label: "Name", type: "text" },
+  { id: "email", label: "Email", type: "email" },
+  { id: "placement", label: "Placement & size", type: "text" },
+] as const;
+
+const emptyForm = { name: "", email: "", placement: "", idea: "" };
+
 function Contact() {
-  const [sent, setSent] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+
+  const mutation = useMutation({
+    mutationFn: () => createBooking(form),
+    onSuccess: () => setForm(emptyForm),
+  });
 
   return (
     <main className="speed-lines bg-background">
       <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 md:grid-cols-2">
         <div>
           <h1 className="manga-outline text-[clamp(2.5rem,7vw,5rem)] text-primary">
-            BOOK A<br />SESSION
+            BOOK A<br />
+            SESSION
           </h1>
           <dl className="mt-10 space-y-6 text-lg">
             <div>
@@ -66,19 +82,14 @@ function Contact() {
           </figure>
         </div>
 
-
         <form
           className="panel space-y-5 p-7"
           onSubmit={(e) => {
             e.preventDefault();
-            setSent(true);
+            mutation.mutate();
           }}
         >
-          {[
-            { id: "name", label: "Name", type: "text" },
-            { id: "email", label: "Email", type: "email" },
-            { id: "placement", label: "Placement & size", type: "text" },
-          ].map((f) => (
+          {textFields.map((f) => (
             <div key={f.id}>
               <label
                 htmlFor={f.id}
@@ -90,6 +101,10 @@ function Contact() {
                 id={f.id}
                 type={f.type}
                 required
+                value={form[f.id]}
+                onChange={(e) =>
+                  setForm((s) => ({ ...s, [f.id]: e.target.value }))
+                }
                 className="mt-2 w-full border-4 border-ink bg-background px-3 py-2 text-foreground outline-none focus:border-primary"
               />
             </div>
@@ -105,18 +120,28 @@ function Contact() {
               id="idea"
               rows={5}
               required
+              value={form.idea}
+              onChange={(e) => setForm((s) => ({ ...s, idea: e.target.value }))}
               className="mt-2 w-full border-4 border-ink bg-background px-3 py-2 text-foreground outline-none focus:border-primary"
             />
           </div>
           <button
             type="submit"
-            className="w-full border-4 border-ink bg-primary px-6 py-4 font-display text-lg uppercase text-primary-foreground shadow-[8px_8px_0_0_var(--ink)] transition-transform hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0_0_var(--ink)]"
+            disabled={mutation.isPending}
+            className="w-full border-4 border-ink bg-primary px-6 py-4 font-display text-lg uppercase text-primary-foreground shadow-[8px_8px_0_0_var(--ink)] transition-transform hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0_0_var(--ink)] disabled:opacity-60"
           >
-            Send request
+            {mutation.isPending ? "Sending…" : "Send request"}
           </button>
-          {sent && (
+          {mutation.isSuccess && (
             <p className="border-4 border-ink bg-secondary px-4 py-3 text-sm font-bold uppercase tracking-[0.15em] text-secondary-foreground">
               Request received — we reply within two days.
+            </p>
+          )}
+          {mutation.isError && (
+            <p className="border-4 border-ink bg-destructive px-4 py-3 text-sm font-bold uppercase tracking-[0.15em] text-destructive-foreground">
+              {mutation.error instanceof Error
+                ? mutation.error.message
+                : "Could not send — try again."}
             </p>
           )}
         </form>
