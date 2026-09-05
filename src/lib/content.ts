@@ -1,10 +1,27 @@
 import { supabase, isSupabaseConfigured } from "./supabase";
 
+export const FRAME_OPTIONS = [
+  { value: "plain", label: "Plain", className: "item-frame-plain" },
+  { value: "gothic", label: "Gothic", className: "item-frame-gothic" },
+  { value: "ornate", label: "Ornate", className: "item-frame-ornate" },
+] as const;
+
+export type Frame = (typeof FRAME_OPTIONS)[number]["value"];
+
+/** Tailwind class for an item's chosen frame, falling back to plain. */
+export function frameClassName(frame: string | null | undefined): string {
+  return (
+    FRAME_OPTIONS.find((f) => f.value === frame)?.className ??
+    "item-frame-plain"
+  );
+}
+
 export type RecentWork = {
   id: string;
   title: string;
   meta: string | null;
   image_url: string;
+  frame: Frame;
 };
 
 export type GalleryItem = {
@@ -12,6 +29,7 @@ export type GalleryItem = {
   title: string;
   meta: string | null;
   image_url: string;
+  frame: Frame;
 };
 
 export type ShopItem = {
@@ -21,6 +39,7 @@ export type ShopItem = {
   tag: string | null;
   description: string | null;
   image_url: string;
+  frame: Frame;
 };
 
 export const BOOKING_STATUSES = [
@@ -71,6 +90,7 @@ export async function addRecentWork(input: {
   title: string;
   meta: string;
   image_url: string;
+  frame: Frame;
 }): Promise<void> {
   const { error } = await supabase.from("recent_work").insert(input);
   if (error) throw error;
@@ -80,6 +100,7 @@ export async function addGalleryItem(input: {
   title: string;
   meta: string;
   image_url: string;
+  frame: Frame;
 }): Promise<void> {
   const { error } = await supabase.from("gallery_items").insert(input);
   if (error) throw error;
@@ -91,6 +112,7 @@ export async function addShopItem(input: {
   tag: string;
   description: string;
   image_url: string;
+  frame: Frame;
 }): Promise<void> {
   const { error } = await supabase.from("shop_items").insert(input);
   if (error) throw error;
@@ -128,6 +150,18 @@ export async function listBookings(): Promise<Booking[]> {
   const { data, error } = await supabase
     .from("bookings")
     .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data as Booking[]) ?? [];
+}
+
+/** The signed-in user's own booking requests, matched by email (RLS enforced). */
+export async function listMyBookings(email: string): Promise<Booking[]> {
+  if (!isSupabaseConfigured || !email) return [];
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("*")
+    .ilike("email", email)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data as Booking[]) ?? [];

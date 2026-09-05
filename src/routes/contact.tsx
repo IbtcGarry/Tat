@@ -53,20 +53,24 @@ function Contact() {
               <dt className="text-sm uppercase tracking-[0.25em] text-secondary">
                 Studio
               </dt>
-              <dd className="text-foreground">4-2 Budogaoka</dd>
+              <dd className="text-foreground">
+                OPEN TO CHANGE I DIDNT KNOW WHAT TO PUT HERE
+              </dd>
             </div>
             <div>
               <dt className="text-sm uppercase tracking-[0.25em] text-secondary">
                 Hours
               </dt>
-              <dd className="text-foreground">Tue – Sun · 13:00 – 22:00</dd>
+              <dd className="text-foreground">
+                OPEN TO CHANGE I DIDNT KNOW WHAT TO PUT HERE
+              </dd>
             </div>
             <div>
               <dt className="text-sm uppercase tracking-[0.25em] text-secondary">
                 Deposit
               </dt>
               <dd className="text-foreground">
-                ¥10,000, goes toward the final price
+                OPEN TO CHANGE I DIDNT KNOW WHAT TO PUT HERE
               </dd>
             </div>
           </dl>
@@ -77,7 +81,7 @@ function Contact() {
               className="h-72 w-full border-b-4 border-ink"
             />
             <figcaption className="p-4 text-sm uppercase tracking-[0.15em] text-muted-foreground">
-              Latest studio snapshot
+              OPEN TO CHANGE I DIDNT KNOW WHAT TO PUT HERE
             </figcaption>
           </figure>
         </div>

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
-import { listShop } from "@/lib/content";
+import { frameClassName, listShop } from "@/lib/content";
 
 export const Route = createFileRoute("/shop")({
   head: () => ({
@@ -43,24 +43,25 @@ function Shop() {
         {products.length > 0 ? (
           <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {products.map((p) => (
-              <article key={p.id} className="panel flex flex-col">
-                <div className="relative border-b-4 border-ink">
+              <article
+                key={p.id}
+                className={`${frameClassName(p.frame)} flex flex-col`}
+              >
+                <div className="relative border-b item-line">
                   <img
                     src={p.image_url}
                     alt={p.name}
                     className="h-56 w-full object-cover"
                   />
                   {p.tag && (
-                    <span className="absolute left-0 top-0 border-b-4 border-r-4 border-ink bg-accent px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-accent-foreground">
+                    <span className="absolute left-0 top-0 border-b border-r item-line bg-ink/90 px-3 py-1 font-uploaded text-xs font-bold uppercase tracking-[0.2em] text-primary">
                       {p.tag}
                     </span>
                   )}
                 </div>
                 <div className="flex flex-1 flex-col p-5">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <h2 className="font-display text-xl text-secondary">
-                      {p.name}
-                    </h2>
+                  <div className="flex items-baseline justify-between gap-2 font-uploaded">
+                    <h2 className="text-xl text-secondary">{p.name}</h2>
                     {p.price && (
                       <span className="text-sm font-bold text-foreground">
                         {p.price}
@@ -68,7 +69,7 @@ function Shop() {
                     )}
                   </div>
                   {p.description && (
-                    <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
+                    <p className="mt-3 flex-1 font-uploaded text-sm leading-relaxed text-muted-foreground">
                       {p.description}
                     </p>
                   )}

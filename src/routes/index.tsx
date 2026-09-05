@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
-import { listRecentWork } from "@/lib/content";
+import { frameClassName, listRecentWork } from "@/lib/content";
 import heroTown from "@/assets/hero-town.jpg";
 
 export const Route = createFileRoute("/")({
@@ -46,12 +46,11 @@ function Index() {
           <p className="mb-4 inline-flex w-fit border-4 border-ink bg-accent px-3 py-1 text-xs font-bold uppercase tracking-[0.3em] text-accent-foreground">
             Tattoo studio
           </p>
-          <h1 className="manga-outline text-[clamp(3.5rem,12vw,9rem)] text-primary">
+          <h1 className="manga-outline font-jojo text-[clamp(3.5rem,12vw,9rem)] text-primary">
             TOOSH TATOOS
           </h1>
           <p className="mt-6 max-w-xl text-lg text-foreground/90">
-            Nothing here is ordinary. Heavy outlines, screentone shadows and
-            colors that shouldn't work together — permanently, on skin.
+            TATOOS IN CHICAGO
           </p>
           <div className="mt-9">
             <Link
@@ -79,13 +78,13 @@ function Index() {
           {works.length > 0 ? (
             <div className="mt-12 grid gap-8 md:grid-cols-3">
               {works.map((w) => (
-                <article key={w.id} className="panel">
+                <article key={w.id} className={frameClassName(w.frame)}>
                   <img
                     src={w.image_url}
                     alt={w.title}
-                    className="h-80 w-full border-b-4 border-ink object-cover"
+                    className="h-80 w-full border-b item-line object-cover"
                   />
-                  <div className="p-5">
+                  <div className="p-5 font-uploaded">
                     <h3 className="text-2xl text-secondary">{w.title}</h3>
                     {w.meta && (
                       <p className="mt-1 text-sm uppercase tracking-[0.15em] text-muted-foreground">
@@ -109,27 +108,6 @@ function Index() {
           >
             See the full gallery →
           </Link>
-        </div>
-      </section>
-
-      {/* STUDIO */}
-      <section className="speed-lines border-t-4 border-ink bg-secondary">
-        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-24 md:grid-cols-2">
-          <h2 className="text-5xl text-secondary-foreground">
-            A QUIET TOWN.
-            <br />
-            LOUD TATTOOS.
-          </h2>
-          <div className="space-y-5 text-lg text-secondary-foreground/90">
-            <p>
-              We work out of a small shop behind the Owson on Budogaoka. Three
-              stations, one machine each, no rushed appointments.
-            </p>
-            <p>
-              Every piece starts as a hand-inked drawing. If the design doesn't
-              feel strange enough to stop someone on the street, we redraw it.
-            </p>
-          </div>
         </div>
       </section>
     </main>

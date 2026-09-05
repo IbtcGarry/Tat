@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
-import { listGallery } from "@/lib/content";
+import { frameClassName, listGallery } from "@/lib/content";
 
 export const Route = createFileRoute("/gallery")({
   head: () => ({
@@ -36,21 +36,20 @@ function Gallery() {
           GALLERY
         </h1>
         <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-          Every piece is drawn in-house — no flash sheets, no copies of someone
-          else's work.
+          OPEN TO CHANGE I DIDNT KNOW WHAT TO PUT HERE
         </p>
 
         {pieces.length > 0 ? (
           <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {pieces.map((p) => (
-              <figure key={p.id} className="panel">
+              <figure key={p.id} className={frameClassName(p.frame)}>
                 <img
                   src={p.image_url}
                   alt={p.title}
-                  className="h-72 w-full border-b-4 border-ink object-cover"
+                  className="h-72 w-full border-b item-line object-cover"
                 />
-                <figcaption className="p-4">
-                  <span className="block font-display text-xl text-secondary">
+                <figcaption className="p-4 font-uploaded">
+                  <span className="block text-xl text-secondary">
                     {p.title}
                   </span>
                   {p.meta && (
