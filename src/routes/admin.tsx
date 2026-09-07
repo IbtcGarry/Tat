@@ -9,6 +9,7 @@ import {
   BOOKING_STATUSES,
   FRAME_OPTIONS,
   acceptBooking,
+  addClosure,
   addGalleryItem,
   addRecentWork,
   addShopItem,
@@ -17,9 +18,11 @@ import {
   frameClassName,
   imageCropStyle,
   listBookings,
+  listClosures,
   listGallery,
   listRecentWork,
   listShop,
+  removeClosure,
   updateBookingStatus,
   uploadMedia,
   type Booking,
@@ -28,6 +31,7 @@ import {
 } from "@/lib/content";
 import {
   DURATION_OPTIONS,
+  dayKey,
   fromLocalInput,
   toLocalInput,
 } from "@/lib/booking-schedule";
@@ -1100,6 +1104,132 @@ function BookingsPanel({
   );
 }
 
+function ClosuresPanel() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [pick, setPick] = useState<Date | undefined>();
+  const [reason, setReason] = useState("");
+
+  const closures = useQuery({ queryKey: ["closures"], queryFn: listClosures });
+  const rows = closures.data ?? [];
+  const closedDays = useMemo(
+    () => rows.map((c) => new Date(`${c.day}T00:00`)),
+    [rows],
+  );
+  const todayKey = dayKey(new Date());
+  const upcoming = rows.filter((c) => c.day >= todayKey);
+
+  const close = useMutation({
+    mutationFn: (day: string) => addClosure(day, reason.trim()),
+    onSettled: () => {
+      setPick(undefined);
+      setReason("");
+      void qc.invalidateQueries({ queryKey: ["closures"] });
+    },
+  });
+  const reopen = useMutation({
+    mutationFn: (day: string) => removeClosure(day),
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["closures"] }),
+  });
+
+  const alreadyClosed = pick ? rows.some((c) => c.day === dayKey(pick)) : false;
+
+  return (
+    <Panel
+      title="Closed days"
+      subtitle="Days the public can't book"
+      count={upcoming.length}
+      actions={
+        <TabButton active={open} onClick={() => setOpen((o) => !o)}>
+          {open ? "Hide" : "Manage"}
+        </TabButton>
+      }
+    >
+      {open && (
+        <div className="grid gap-5 p-5 lg:grid-cols-[auto_minmax(0,1fr)]">
+          <div className="self-start border border-[#333333] bg-[#0a0a0a] p-2">
+            <Calendar
+              mode="single"
+              selected={pick}
+              onSelect={setPick}
+              disabled={{ before: new Date(new Date().setHours(0, 0, 0, 0)) }}
+              modifiers={{ closed: closedDays }}
+              modifiersClassNames={{
+                closed:
+                  "relative after:absolute after:bottom-1 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-[#d98a8a]",
+              }}
+            />
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-[0.55rem] uppercase tracking-[0.25em] text-[#8a8a8a]">
+                Reason (optional)
+                <input
+                  type="text"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Holiday, day off…"
+                  className="mt-1 w-full border border-[#3a3a3a] bg-[#0a0a0a] px-2 py-1 text-xs text-[#e5e5e5] outline-none focus:border-[#ffffff]"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={!pick || alreadyClosed || close.isPending}
+                onClick={() => pick && close.mutate(dayKey(pick))}
+                className="mt-2 w-full border border-[#ffffff] bg-[#ffffff] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.1em] text-black transition-colors hover:bg-[#e0e0e0] disabled:opacity-50"
+              >
+                {!pick
+                  ? "Pick a day to close"
+                  : alreadyClosed
+                    ? "Already closed"
+                    : `Close ${format(pick, "EEE d MMM")}`}
+              </button>
+            </div>
+
+            <div>
+              <h3 className="font-display text-xs uppercase tracking-[0.2em] text-[#d4d4d4]">
+                Upcoming closed days
+              </h3>
+              {upcoming.length === 0 ? (
+                <p className="mt-2 text-xs uppercase tracking-[0.2em] text-[#6b6b6b]">
+                  None
+                </p>
+              ) : (
+                <ul className="mt-2 space-y-1.5">
+                  {upcoming.map((c) => (
+                    <li
+                      key={c.day}
+                      className="flex items-center justify-between gap-3 border border-[#333333] bg-[#0a0a0a] px-3 py-2 text-xs"
+                    >
+                      <span className="text-[#e5e5e5]">
+                        {format(new Date(`${c.day}T00:00`), "EEE d MMM yyyy")}
+                        {c.reason && (
+                          <span className="ml-2 text-[#9a9a9a]">
+                            · {c.reason}
+                          </span>
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={reopen.isPending}
+                        onClick={() => reopen.mutate(c.day)}
+                        className="shrink-0 border border-[#3a3a3a] px-2 py-1 text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#e5e5e5] transition-colors hover:border-[#ffffff] disabled:opacity-50"
+                      >
+                        Reopen
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 // --- page -------------------------------------------------------------------
 
 function Admin() {
@@ -1299,6 +1429,8 @@ function Admin() {
               bookingAcceptMutation.mutateAsync({ id, startIso, durationMin })
             }
           />
+
+          <ClosuresPanel />
         </div>
       </div>
     </main>

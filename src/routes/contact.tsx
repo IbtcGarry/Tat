@@ -4,9 +4,10 @@ import { useMemo, useState } from "react";
 import { addDays, format } from "date-fns";
 
 import { Calendar } from "@/components/ui/calendar";
-import { createBooking, listBookedRanges } from "@/lib/content";
+import { createBooking, listBookedRanges, listClosures } from "@/lib/content";
 import {
   BOOKING_WINDOW_DAYS,
+  dayKey,
   endOfDay,
   isOpenDay,
   isSlotTaken,
@@ -54,6 +55,12 @@ function Contact() {
 
   const today = startOfDay(new Date());
   const maxDate = addDays(today, BOOKING_WINDOW_DAYS);
+
+  const closures = useQuery({ queryKey: ["closures"], queryFn: listClosures });
+  const closedDays = useMemo(
+    () => new Set((closures.data ?? []).map((c) => c.day)),
+    [closures.data],
+  );
 
   const busy = useQuery({
     queryKey: ["booked-ranges", date ? format(date, "yyyy-MM-dd") : null],
@@ -122,7 +129,7 @@ function Contact() {
               <p className="mt-0.5 text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
                 {slotIso
                   ? `${format(new Date(slotIso), "h:mm a")} · studio sets final length`
-                  : "Tue – Sat · 11:00 – 20:00"}
+                  : "Open daily · 11:00 – 20:00"}
               </p>
             </div>
             <span className="shrink-0 font-display text-xs uppercase tracking-[0.15em] text-foreground/60">
@@ -148,7 +155,7 @@ function Contact() {
                   disabled={[
                     { before: today },
                     { after: maxDate },
-                    (d: Date) => !isOpenDay(d),
+                    (d: Date) => !isOpenDay(d) || closedDays.has(dayKey(d)),
                   ]}
                   className="mx-auto"
                 />

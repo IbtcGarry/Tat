@@ -206,6 +206,38 @@ export async function createBooking(input: {
   }
 }
 
+// --- studio closures -----------------------------------------------------
+
+export type Closure = { day: string; reason: string | null };
+
+/** All closed calendar days (YYYY-MM-DD), soonest first. Public. */
+export async function listClosures(): Promise<Closure[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase
+    .from("studio_closures")
+    .select("day, reason")
+    .order("day");
+  if (error) throw error;
+  return (data as Closure[]) ?? [];
+}
+
+/** Admin: close a day so nobody can book it (RLS enforced). */
+export async function addClosure(day: string, reason: string): Promise<void> {
+  const { error } = await supabase
+    .from("studio_closures")
+    .upsert({ day, reason: reason || null });
+  if (error) throw error;
+}
+
+/** Admin: reopen a previously closed day (RLS enforced). */
+export async function removeClosure(day: string): Promise<void> {
+  const { error } = await supabase
+    .from("studio_closures")
+    .delete()
+    .eq("day", day);
+  if (error) throw error;
+}
+
 /** Busy time ranges between two ISO timestamps (via the SECURITY DEFINER RPC). */
 export async function listBookedRanges(
   fromIso: string,

@@ -6,7 +6,9 @@ import { SESSION_MINUTES, type BusyRange } from "./content";
  * Studio schedule. Times are in the visitor's own local timezone — good enough
  * for a single-location studio; revisit if you ever take remote bookings.
  */
-export const OPEN_DAYS = [2, 3, 4, 5, 6]; // 0 = Sun … 6 = Sat  →  Tue–Sat
+// 0 = Sun … 6 = Sat. Open every day by default — the studio closes individual
+// dates from the admin page (see studio_closures).
+export const OPEN_DAYS = [0, 1, 2, 3, 4, 5, 6];
 export const SLOT_HOURS = [11, 12, 13, 14, 15, 16, 17, 18];
 
 /** How many days ahead the public calendar lets you book. */
@@ -14,6 +16,11 @@ export const BOOKING_WINDOW_DAYS = 60;
 
 export function isOpenDay(d: Date): boolean {
   return OPEN_DAYS.includes(d.getDay());
+}
+
+/** Local calendar-day key, e.g. "2026-09-23" — matches studio_closures.day. */
+export function dayKey(d: Date): string {
+  return format(d, "yyyy-MM-dd");
 }
 
 /** Candidate slot start times for one calendar day (local time). */
