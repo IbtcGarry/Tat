@@ -1,4 +1,4 @@
-import { addMinutes } from "date-fns";
+import { addMinutes, format } from "date-fns";
 
 import { SESSION_MINUTES, type BusyRange } from "./content";
 
@@ -40,6 +40,29 @@ export function isSlotTaken(slot: Date, busy: BusyRange[]): boolean {
   return busy.some((b) =>
     rangesOverlap(slot, slotEnd, new Date(b.starts_at), new Date(b.ends_at)),
   );
+}
+
+/** Session-length choices the admin picks from when confirming a booking. */
+export const DURATION_OPTIONS: { value: number; label: string }[] = [
+  { value: 30, label: "30 min" },
+  { value: 60, label: "1 hour" },
+  { value: 90, label: "1½ hours" },
+  { value: 120, label: "2 hours" },
+  { value: 150, label: "2½ hours" },
+  { value: 180, label: "3 hours" },
+  { value: 240, label: "4 hours" },
+  { value: 300, label: "5 hours" },
+  { value: 360, label: "6 hours" },
+];
+
+/** A Date → the value string a <input type="datetime-local"> expects (local time). */
+export function toLocalInput(d: Date): string {
+  return format(d, "yyyy-MM-dd'T'HH:mm");
+}
+
+/** A <input type="datetime-local"> value (local time, no zone) → Date. */
+export function fromLocalInput(s: string): Date {
+  return new Date(s);
 }
 
 export function startOfDay(d: Date): Date {

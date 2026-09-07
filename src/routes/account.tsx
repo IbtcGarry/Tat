@@ -88,6 +88,7 @@ function AccountGate() {
                   )}
                   {b.starts_at && (
                     <p className="mt-2 text-sm font-bold uppercase tracking-[0.15em] text-secondary">
+                      {b.status === "booked" ? "Confirmed · " : "Requested · "}
                       {new Date(b.starts_at).toLocaleString([], {
                         weekday: "short",
                         day: "numeric",
@@ -95,6 +96,7 @@ function AccountGate() {
                         hour: "numeric",
                         minute: "2-digit",
                       })}
+                      {b.status !== "booked" && " · awaiting confirmation"}
                     </p>
                   )}
                   <p className="mt-2 text-xs uppercase tracking-[0.15em] text-muted-foreground">

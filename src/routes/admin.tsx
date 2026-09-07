@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/use-auth";
 import {
   BOOKING_STATUSES,
   FRAME_OPTIONS,
+  acceptBooking,
   addGalleryItem,
   addRecentWork,
   addShopItem,
@@ -25,6 +26,11 @@ import {
   type BookingStatus,
   type Frame,
 } from "@/lib/content";
+import {
+  DURATION_OPTIONS,
+  fromLocalInput,
+  toLocalInput,
+} from "@/lib/booking-schedule";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -661,24 +667,152 @@ function DeleteButton({
   );
 }
 
+/** Inline "accept this request at time X for Y minutes" editor. */
+function ScheduleEditor({
+  booking,
+  defaultStart,
+  onAccept,
+}: {
+  booking: Booking;
+  defaultStart?: Date;
+  onAccept: (
+    id: string,
+    startIso: string,
+    durationMin: number,
+  ) => Promise<void>;
+}) {
+  const seed = () =>
+    booking.starts_at
+      ? new Date(booking.starts_at)
+      : (defaultStart ?? new Date());
+
+  const [editing, setEditing] = useState(false);
+  const [startInput, setStartInput] = useState(() => toLocalInput(seed()));
+  const [duration, setDuration] = useState(booking.duration_min || 120);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const isBooked = booking.status === "booked";
+
+  function open() {
+    setStartInput(toLocalInput(seed()));
+    setDuration(booking.duration_min || 120);
+    setErr(null);
+    setEditing(true);
+  }
+
+  async function confirm() {
+    setSaving(true);
+    setErr(null);
+    try {
+      await onAccept(
+        booking.id,
+        fromLocalInput(startInput).toISOString(),
+        duration,
+      );
+      setEditing(false);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not save.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={open}
+        className="border border-[#3a3a3a] px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-[#e5e5e5] transition-colors hover:border-[#ffffff]"
+      >
+        {isBooked ? "Adjust time" : "Accept & set time"}
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-1 space-y-2 border border-[#3a3a3a] bg-[#111111] p-2">
+      <label className="block text-[0.55rem] uppercase tracking-[0.25em] text-[#8a8a8a]">
+        Start
+        <input
+          type="datetime-local"
+          value={startInput}
+          onChange={(e) => setStartInput(e.target.value)}
+          className="mt-1 w-full border border-[#3a3a3a] bg-[#0a0a0a] px-2 py-1 text-xs text-[#e5e5e5] outline-none focus:border-[#ffffff] [color-scheme:dark]"
+        />
+      </label>
+      <label className="block text-[0.55rem] uppercase tracking-[0.25em] text-[#8a8a8a]">
+        Length
+        <select
+          value={duration}
+          onChange={(e) => setDuration(Number(e.target.value))}
+          className="mt-1 w-full border border-[#3a3a3a] bg-[#0a0a0a] px-2 py-1 text-xs text-[#e5e5e5] outline-none focus:border-[#ffffff]"
+        >
+          {DURATION_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={saving}
+          onClick={confirm}
+          className="flex-1 border border-[#ffffff] bg-[#ffffff] px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-black transition-colors hover:bg-[#e0e0e0] disabled:opacity-60"
+        >
+          {saving ? "Saving…" : isBooked ? "Update" : "Confirm booking"}
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => setEditing(false)}
+          className="border border-[#3a3a3a] px-3 py-1 text-xs uppercase tracking-[0.1em] text-[#9a9a9a] transition-colors hover:border-[#8a8a8a]"
+        >
+          Cancel
+        </button>
+      </div>
+      {err && (
+        <p className="border border-[#7a1f1f] bg-[#1a0d0d] px-2 py-1 text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#d98a8a]">
+          {err}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function BookingCard({
   booking,
+  defaultStart,
   pendingId,
   onStatus,
   onDelete,
+  onAccept,
 }: {
   booking: Booking;
+  defaultStart?: Date;
   pendingId: string | null;
   onStatus: (id: string, status: BookingStatus) => void;
   onDelete: (id: string) => void;
+  onAccept: (
+    id: string,
+    startIso: string,
+    durationMin: number,
+  ) => Promise<void>;
 }) {
+  const headline =
+    booking.status === "booked" && booking.starts_at
+      ? whenLabel(booking)
+      : booking.starts_at
+        ? `Wants ${format(new Date(booking.starts_at), "EEE d MMM · h:mm a")}`
+        : "No time requested";
+
   return (
     <div className="border border-[#333333] bg-[#0a0a0a] p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-display text-sm uppercase tracking-[0.1em] text-[#ffffff]">
-          {booking.starts_at
-            ? format(new Date(booking.starts_at), "h:mm a")
-            : "No time set"}
+          {headline}
         </span>
         <span className="text-[0.6rem] uppercase tracking-[0.2em] text-[#9a9a9a]">
           {booking.name}
@@ -698,11 +832,16 @@ function BookingCard({
           {booking.idea}
         </p>
       )}
-      <div className="mt-2 flex items-center justify-between gap-2">
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <StatusSelect
           booking={booking}
           pending={pendingId === booking.id}
           onStatus={onStatus}
+        />
+        <ScheduleEditor
+          booking={booking}
+          defaultStart={defaultStart}
+          onAccept={onAccept}
         />
         <DeleteButton
           id={booking.id}
@@ -720,45 +859,65 @@ function BookingsPanel({
   pendingId,
   onStatus,
   onDelete,
+  onAccept,
 }: {
   bookings: Booking[];
   isLoading: boolean;
   pendingId: string | null;
   onStatus: (id: string, status: BookingStatus) => void;
   onDelete: (id: string) => void;
+  onAccept: (
+    id: string,
+    startIso: string,
+    durationMin: number,
+  ) => Promise<void>;
 }) {
   const [view, setView] = useState<null | "list" | "calendar">(null);
   const [day, setDay] = useState<Date | undefined>(new Date());
-  const newCount = bookings.filter((b) => b.status === "new").length;
 
-  const scheduled = useMemo(
+  const noonOn = (d?: Date) => {
+    if (!d) return undefined;
+    const x = new Date(d);
+    x.setHours(12, 0, 0, 0);
+    return x;
+  };
+
+  // Only admin-confirmed bookings hold a slot; the rest are open requests.
+  const confirmed = useMemo(
     () =>
       bookings
-        .filter((b) => b.starts_at)
+        .filter((b) => b.status === "booked" && b.starts_at)
         .sort((a, b) => a.starts_at!.localeCompare(b.starts_at!)),
     [bookings],
   );
-  const unscheduled = useMemo(
-    () => bookings.filter((b) => !b.starts_at),
+  const requests = useMemo(
+    () =>
+      bookings
+        .filter((b) => b.status === "new" || b.status === "contacted")
+        .sort((a, b) =>
+          (a.starts_at ?? a.created_at).localeCompare(
+            b.starts_at ?? b.created_at,
+          ),
+        ),
     [bookings],
   );
   const bookedDays = useMemo(
-    () => scheduled.map((b) => new Date(b.starts_at!)),
-    [scheduled],
+    () => confirmed.map((b) => new Date(b.starts_at!)),
+    [confirmed],
   );
   const dayEvents = day
-    ? scheduled.filter((b) => isSameDay(new Date(b.starts_at!), day))
+    ? confirmed.filter((b) => isSameDay(new Date(b.starts_at!), day))
     : [];
-  const upcoming = scheduled.filter(
+  const upcoming = confirmed.filter(
     (b) => new Date(b.ends_at ?? b.starts_at!).getTime() >= Date.now(),
   );
 
   return (
     <Panel
       title="Bookings"
-      subtitle={`${scheduled.length} scheduled · ${unscheduled.length} unscheduled${
-        newCount > 0 ? ` · ${newCount} new` : ""
-      }`}
+      subtitle={`${confirmed.length} confirmed · ${requests.length} request${
+        requests.length === 1 ? "" : "s"
+      } to review`}
       count={bookings.length}
       actions={
         <>
@@ -786,6 +945,9 @@ function BookingsPanel({
           </p>
         ) : (
           <div className="overflow-x-auto">
+            <p className="px-4 pt-3 text-[0.6rem] uppercase tracking-[0.2em] text-[#6b6b6b]">
+              Accept requests &amp; set their time from the Calendar view
+            </p>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-[#333333] text-left font-display text-xs uppercase tracking-[0.15em] text-[#d4d4d4]">
@@ -861,21 +1023,49 @@ function BookingsPanel({
           <div className="space-y-5">
             <div>
               <h3 className="font-display text-xs uppercase tracking-[0.2em] text-[#d4d4d4]">
-                {day ? format(day, "EEEE d MMMM") : "Pick a day"}
+                {day ? format(day, "EEEE d MMMM") : "Pick a day"} · confirmed
               </h3>
               <div className="mt-2 space-y-2">
                 {dayEvents.length === 0 ? (
                   <p className="text-xs uppercase tracking-[0.2em] text-[#6b6b6b]">
-                    Nothing booked this day
+                    Nothing confirmed this day
                   </p>
                 ) : (
                   dayEvents.map((b) => (
                     <BookingCard
                       key={b.id}
                       booking={b}
+                      defaultStart={noonOn(day)}
                       pendingId={pendingId}
                       onStatus={onStatus}
                       onDelete={onDelete}
+                      onAccept={onAccept}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-display text-xs uppercase tracking-[0.2em] text-[#d4d4d4]">
+                Requests to review
+                {requests.length > 0 ? ` · ${requests.length}` : ""}
+              </h3>
+              <div className="mt-2 space-y-2">
+                {requests.length === 0 ? (
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#6b6b6b]">
+                    No open requests
+                  </p>
+                ) : (
+                  requests.map((b) => (
+                    <BookingCard
+                      key={b.id}
+                      booking={b}
+                      defaultStart={noonOn(day)}
+                      pendingId={pendingId}
+                      onStatus={onStatus}
+                      onDelete={onDelete}
+                      onAccept={onAccept}
                     />
                   ))
                 )}
@@ -896,33 +1086,11 @@ function BookingsPanel({
                         className="text-left hover:text-[#ffffff]"
                       >
                         {format(new Date(b.starts_at!), "EEE d MMM · h:mm a")} —{" "}
-                        {b.name}{" "}
-                        <span className="uppercase tracking-[0.15em] text-[#6b6b6b]">
-                          ({b.status})
-                        </span>
+                        {b.name}
                       </button>
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
-
-            {unscheduled.length > 0 && (
-              <div>
-                <h3 className="font-display text-xs uppercase tracking-[0.2em] text-[#d4d4d4]">
-                  Unscheduled requests
-                </h3>
-                <div className="mt-2 space-y-2">
-                  {unscheduled.map((b) => (
-                    <BookingCard
-                      key={b.id}
-                      booking={b}
-                      pendingId={pendingId}
-                      onStatus={onStatus}
-                      onDelete={onDelete}
-                    />
-                  ))}
-                </div>
               </div>
             )}
           </div>
@@ -977,6 +1145,23 @@ function Admin() {
   const bookingDeleteMutation = useMutation({
     mutationFn: (id: string) => deleteBooking(id),
     onMutate: (id) => setPendingId(id),
+    onSettled: () => {
+      setPendingId(null);
+      void qc.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
+
+  const bookingAcceptMutation = useMutation({
+    mutationFn: ({
+      id,
+      startIso,
+      durationMin,
+    }: {
+      id: string;
+      startIso: string;
+      durationMin: number;
+    }) => acceptBooking(id, startIso, durationMin),
+    onMutate: ({ id }) => setPendingId(id),
     onSettled: () => {
       setPendingId(null);
       void qc.invalidateQueries({ queryKey: ["bookings"] });
@@ -1110,6 +1295,9 @@ function Admin() {
               bookingStatusMutation.mutate({ id, status })
             }
             onDelete={(id) => bookingDeleteMutation.mutate(id)}
+            onAccept={(id, startIso, durationMin) =>
+              bookingAcceptMutation.mutateAsync({ id, startIso, durationMin })
+            }
           />
         </div>
       </div>

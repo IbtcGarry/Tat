@@ -258,3 +258,31 @@ export async function deleteBooking(id: string): Promise<void> {
   const { error } = await supabase.from("bookings").delete().eq("id", id);
   if (error) throw error;
 }
+
+/**
+ * Admin: confirm a request at a chosen start time + duration. This is what
+ * actually reserves the slot — status becomes 'booked' and the DB exclusion
+ * constraint blocks it from overlapping any other confirmed booking.
+ */
+export async function acceptBooking(
+  id: string,
+  startIso: string,
+  durationMin: number,
+): Promise<void> {
+  const { error } = await supabase
+    .from("bookings")
+    .update({
+      starts_at: startIso,
+      duration_min: durationMin,
+      status: "booked" satisfies BookingStatus,
+    })
+    .eq("id", id);
+  if (error) {
+    if (error.code === "23P01" || /bookings_no_overlap/.test(error.message)) {
+      throw new Error(
+        "That time overlaps another confirmed booking — pick a different time or length.",
+      );
+    }
+    throw error;
+  }
+}

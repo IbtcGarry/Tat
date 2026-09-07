@@ -242,6 +242,10 @@ function Contact() {
               className={fieldClass}
             />
           </div>
+          <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">
+            This sends a request for your preferred time. The studio sets the
+            final start and session length and confirms by email.
+          </p>
           <button
             type="submit"
             disabled={mutation.isPending || !ready}
@@ -255,7 +259,7 @@ function Contact() {
           </button>
           {mutation.isSuccess && (
             <p className="border-4 border-ink bg-secondary px-4 py-3 text-sm font-bold uppercase tracking-[0.15em] text-secondary-foreground">
-              Slot requested — we confirm by email within two days.
+              Request sent — we confirm your session by email within two days.
             </p>
           )}
           {mutation.isError && (
