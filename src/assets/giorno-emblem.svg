@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Giorno emblem">
+  <defs>
+    <clipPath id="ge-field"><circle cx="100" cy="100" r="87"/></clipPath>
+    <linearGradient id="ge-gold" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="#f3e6b0"/>
+      <stop offset="0.45" stop-color="#cbab52"/>
+      <stop offset="1" stop-color="#7f6226"/>
+    </linearGradient>
+    <g id="ge-half" fill="#161c6b" stroke="#ecdfa6" stroke-width="2.5" stroke-linejoin="round">
+      <circle cx="188" cy="72" r="27"/>
+      <circle cx="178" cy="150" r="23"/>
+      <circle cx="132" cy="190" r="17"/>
+      <path d="M100 116 C 110 98, 128 110, 150 104 C 172 98, 168 66, 146 62 C 124 58, 108 74, 100 92 Z"/>
+      <path d="M100 92 C 104 120, 132 132, 150 152 C 164 168, 152 188, 130 184 C 116 181, 108 172, 106 160 C 106 176, 112 192, 122 200 L 100 200 Z"/>
+    </g>
+  </defs>
+
+  <circle cx="100" cy="100" r="98" fill="url(#ge-gold)"/>
+  <circle cx="100" cy="100" r="97" fill="none" stroke="#f3e6b0" stroke-width="2" opacity="0.5"/>
+  <circle cx="100" cy="100" r="88" fill="#cbab52"/>
+  <circle cx="100" cy="100" r="87" fill="#2f9ede"/>
+
+  <g clip-path="url(#ge-field)">
+    <use href="#ge-half"/>
+    <use href="#ge-half" transform="matrix(-1 0 0 1 200 0)"/>
+  </g>
+
+  <circle cx="100" cy="48" r="11" fill="#161c6b" stroke="#ecdfa6" stroke-width="2.5"/>
+</svg>

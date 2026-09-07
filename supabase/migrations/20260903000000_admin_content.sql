@@ -1,5 +1,5 @@
 -- ============================================================================
--- Admin / worker content system for Toosh Tatoos
+-- Admin / worker content system for Toosh Tattoos
 --   * profiles table with a `role` column ('user' | 'admin')
 --   * recent_work / gallery_items / shop_items content tables
 --   * a public `media` storage bucket

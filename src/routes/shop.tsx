@@ -1,22 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
-import { frameClassName, listShop } from "@/lib/content";
+import { frameClassName, imageCropStyle, listShop } from "@/lib/content";
 
 export const Route = createFileRoute("/shop")({
   head: () => ({
     meta: [
-      { title: "Shop — Toosh Tatoos" },
+      { title: "Shop — Toosh Tattoos" },
       {
         name: "description",
         content:
-          "Studio goods, aftercare and appointment deposits from Toosh Tatoos.",
+          "Studio goods, aftercare and appointment deposits from Toosh Tattoos.",
       },
-      { property: "og:title", content: "Shop — Toosh Tatoos" },
+      { property: "og:title", content: "Shop — Toosh Tattoos" },
       {
         property: "og:description",
         content:
-          "Studio goods, aftercare and appointment deposits from Toosh Tatoos.",
+          "Studio goods, aftercare and appointment deposits from Toosh Tattoos.",
       },
     ],
   }),
@@ -47,10 +47,11 @@ function Shop() {
                 key={p.id}
                 className={`${frameClassName(p.frame)} flex flex-col`}
               >
-                <div className="relative border-b item-line">
+                <div className="relative overflow-hidden border-b item-line">
                   <img
                     src={p.image_url}
                     alt={p.name}
+                    style={imageCropStyle(p)}
                     className="h-56 w-full object-cover"
                   />
                   {p.tag && (

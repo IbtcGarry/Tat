@@ -8,7 +8,7 @@ import { listMyBookings } from "@/lib/content";
 export const Route = createFileRoute("/account")({
   head: () => ({
     meta: [
-      { title: "My Account — Toosh Tatoos" },
+      { title: "My Account — Toosh Tattoos" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -84,6 +84,17 @@ function AccountGate() {
                   {b.idea && (
                     <p className="mt-1 text-sm text-muted-foreground">
                       {b.idea}
+                    </p>
+                  )}
+                  {b.starts_at && (
+                    <p className="mt-2 text-sm font-bold uppercase tracking-[0.15em] text-secondary">
+                      {new Date(b.starts_at).toLocaleString([], {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
                     </p>
                   )}
                   <p className="mt-2 text-xs uppercase tracking-[0.15em] text-muted-foreground">

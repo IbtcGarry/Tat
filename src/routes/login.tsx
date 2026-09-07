@@ -6,15 +6,15 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Log In — Toosh Tatoos" },
+      { title: "Log In — Toosh Tattoos" },
       {
         name: "description",
-        content: "Log in to your Toosh Tatoos account.",
+        content: "Log in to your Toosh Tattoos account.",
       },
-      { property: "og:title", content: "Log In — Toosh Tatoos" },
+      { property: "og:title", content: "Log In — Toosh Tattoos" },
       {
         property: "og:description",
-        content: "Log in to your Toosh Tatoos account.",
+        content: "Log in to your Toosh Tattoos account.",
       },
     ],
   }),

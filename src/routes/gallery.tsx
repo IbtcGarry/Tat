@@ -1,18 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
-import { frameClassName, listGallery } from "@/lib/content";
+import { frameClassName, imageCropStyle, listGallery } from "@/lib/content";
 
 export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
-      { title: "Gallery — Toosh Tatoos" },
+      { title: "Gallery — Toosh Tattoos" },
       {
         name: "description",
         content:
-          "Healed and fresh tattoo work from Toosh Tatoos: blackwork, screentone shading, and saturated color pieces.",
+          "Healed and fresh tattoo work from Toosh Tattoos: blackwork, screentone shading, and saturated color pieces.",
       },
-      { property: "og:title", content: "Gallery — Toosh Tatoos" },
+      { property: "og:title", content: "Gallery — Toosh Tattoos" },
       {
         property: "og:description",
         content:
@@ -42,10 +42,14 @@ function Gallery() {
         {pieces.length > 0 ? (
           <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {pieces.map((p) => (
-              <figure key={p.id} className={frameClassName(p.frame)}>
+              <figure
+                key={p.id}
+                className={`${frameClassName(p.frame)} overflow-hidden`}
+              >
                 <img
                   src={p.image_url}
                   alt={p.title}
+                  style={imageCropStyle(p)}
                   className="h-72 w-full border-b item-line object-cover"
                 />
                 <figcaption className="p-4 font-uploaded">

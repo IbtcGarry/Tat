@@ -1,19 +1,22 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
-import { frameClassName, listRecentWork } from "@/lib/content";
+import { frameClassName, imageCropStyle, listRecentWork } from "@/lib/content";
 import heroTown from "@/assets/hero-town.jpg";
+import giornoEmblem from "@/assets/giorno-emblem.svg";
+import dollarBill from "@/assets/dollar_bill.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Toosh Tatoos — Bizarre Tattoo Studio" },
+      { title: "Toosh Tattoos — Bizarre Tattoo Studio" },
       {
         name: "description",
         content:
-          "Toosh Tatoos is a tattoo studio for bold outlines, screentone shading and unbreakable design. Book a session.",
+          "Toosh Tattoos is a tattoo studio for bold outlines, screentone shading and unbreakable design. Book a session.",
       },
-      { property: "og:title", content: "Toosh Tatoos — Bizarre Tattoo Studio" },
+      { property: "og:title", content: "Toosh Tattoos — Bizarre Tattoo Studio" },
       {
         property: "og:description",
         content:
@@ -25,6 +28,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const [marqueePaused, setMarqueePaused] = useState(false);
   const { data: works = [], isLoading } = useQuery({
     queryKey: ["recent_work"],
     queryFn: listRecentWork,
@@ -47,10 +51,10 @@ function Index() {
             Tattoo studio
           </p>
           <h1 className="manga-outline font-jojo text-[clamp(3.5rem,12vw,9rem)] text-primary">
-            TOOSH TATOOS
+            TOOSH TATTOOS
           </h1>
           <p className="mt-6 max-w-xl text-lg text-foreground/90">
-            TATOOS IN CHICAGO
+            TATTOOS IN CHICAGO
           </p>
           <div className="mt-9">
             <Link
@@ -64,11 +68,43 @@ function Index() {
       </section>
 
       {/* MARQUEE STRIP */}
-      <section className="skew-strip -mt-6 border-y-4 border-ink bg-primary py-3">
-        <p className="whitespace-nowrap text-center font-display text-xl uppercase tracking-[0.35em] text-primary-foreground">
-          ゴゴゴゴ · bold lines · unbreakable · ゴゴゴゴ · bold lines ·
-          unbreakable
-        </p>
+      <section className="skew-strip relative -mt-6 overflow-hidden border-y-4 border-ink bg-primary py-3">
+        <div
+          className={`marquee-right flex w-max items-center font-display text-xl uppercase tracking-[0.35em] text-primary-foreground ${
+            marqueePaused ? "is-paused" : ""
+          }`}
+        >
+          {[0, 1].map((i) => (
+            <span
+              key={i}
+              className="flex shrink-0 items-center gap-3 whitespace-nowrap pr-3"
+              aria-hidden={i === 1}
+            >
+              Chicago Il ·
+              <img
+                src={giornoEmblem}
+                alt={i === 0 ? "Giorno emblem" : ""}
+                className="inline-block h-8 w-8 shrink-0"
+              />
+              Bookings Available ·
+              <img
+                src={dollarBill}
+                alt={i === 0 ? "Toosh hundred dollar bill" : ""}
+                className="inline-block h-7 w-auto shrink-0 border-2 border-ink"
+              />
+              @TooshTattoos ·
+            </span>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setMarqueePaused((p) => !p)}
+          aria-pressed={marqueePaused}
+          className="absolute right-2 top-1/2 z-10 -translate-y-1/2 border-2 border-ink bg-background px-2 py-1 font-display text-[0.65rem] uppercase tracking-[0.15em] text-foreground shadow-[3px_3px_0_0_var(--ink)] transition-transform hover:translate-x-0.5 hover:translate-y-[calc(-50%+2px)] hover:shadow-none"
+        >
+          {marqueePaused ? "Play" : "Skip"}
+        </button>
       </section>
 
       {/* WORKS */}
@@ -78,10 +114,14 @@ function Index() {
           {works.length > 0 ? (
             <div className="mt-12 grid gap-8 md:grid-cols-3">
               {works.map((w) => (
-                <article key={w.id} className={frameClassName(w.frame)}>
+                <article
+                  key={w.id}
+                  className={`${frameClassName(w.frame)} overflow-hidden`}
+                >
                   <img
                     src={w.image_url}
                     alt={w.title}
+                    style={imageCropStyle(w)}
                     className="h-80 w-full border-b item-line object-cover"
                   />
                   <div className="p-5 font-uploaded">

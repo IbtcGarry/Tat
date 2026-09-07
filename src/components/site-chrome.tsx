@@ -25,7 +25,7 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
         <Link to="/" className="group flex items-baseline gap-2">
           <span className="font-jojo text-2xl text-primary">TOOSH</span>
-          <span className="font-jojo text-2xl text-secondary">TATOOS</span>
+          <span className="font-jojo text-2xl text-secondary">TATTOOS</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm font-bold uppercase tracking-[0.18em]">
           {nav.map((item) => (
@@ -83,7 +83,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t-4 border-ink bg-secondary text-secondary-foreground">
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-10">
-        <p className="font-jojo text-3xl">TOOSH TATOOS</p>
+        <p className="font-jojo text-3xl">TOOSH TATTOOS</p>
         <p className="text-sm uppercase tracking-[0.2em] opacity-80">
           OPEN TO CHANGE I DIDNT KNOW WHAT TO PUT HERE
         </p>

@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * TOOSH TATOOS — design system
+ * TOOSH TATTOOS — design system
  * Diamond is Unbreakable palette: golden sky, magenta shadow, teal grass,
  * ink black outlines, halftone texture.
  */
@@ -41,7 +41,7 @@
   --font-body: "Barlow", ui-sans-serif, sans-serif;
   /* Elden-Ring-style serif, used only for uploaded content */
   --font-uploaded: "Cormorant Garamond", ui-serif, Georgia, serif;
-  /* Ornate JoJo's-Bizarre-Adventure-style wordmark, used only for the "TOOSH TATOOS" logo */
+  /* Ornate JoJo's-Bizarre-Adventure-style wordmark, used only for the "TOOSH TATTOOS" logo */
   --font-jojo: "Cinzel Decorative", "Archivo Black", ui-sans-serif, sans-serif;
 }
 
@@ -118,19 +118,9 @@
   }
 }
 
-/* Halftone dot texture overlay */
+/* Halftone dot texture — disabled (kept as a no-op so existing markup still compiles) */
 @utility halftone {
   position: relative;
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image: radial-gradient(var(--ink) 1px, transparent 1.2px);
-    background-size: 6px 6px;
-    opacity: 0.22;
-    mix-blend-mode: multiply;
-  }
 }
 
 @utility panel {
@@ -170,12 +160,46 @@
     color-mix(in oklab, var(--primary) 35%, transparent);
 }
 
+/* Frame 4/4 — Transparent: no frame at all, item sits on the page */
+@utility item-frame-transparent {
+  border: 0;
+  background-color: transparent;
+}
+
 @utility item-line {
   border-color: var(--item-line);
 }
 
 @utility skew-strip {
   transform: skewY(-3deg);
+}
+
+/* Marquee: content slides to the right and wraps back in from the left.
+   The track holds two identical copies; shifting from -50% to 0 moves it
+   rightward by exactly one copy, so the loop is seamless. */
+@utility marquee-right {
+  animation: marquee-right 24s linear infinite;
+}
+
+@keyframes marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Skip button freezes the loop (unlayered so it beats the utility). */
+.marquee-right.is-paused {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-right {
+    animation: none;
+    transform: translateX(-50%);
+  }
 }
 
 @utility manga-outline {

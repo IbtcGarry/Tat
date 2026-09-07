@@ -1,5 +1,5 @@
 -- ============================================================================
--- Booking system for Toosh Tatoos
+-- Booking system for Toosh Tattoos
 --   * anyone (even signed-out visitors) can submit a booking request
 --   * only admins can read / update status / delete
 --
