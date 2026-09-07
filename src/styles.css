@@ -125,7 +125,7 @@
 
 @utility panel {
   border: 4px solid var(--ink);
-  box-shadow: var(--shadow-panel-pink);
+  box-shadow: var(--shadow-panel);
   background-color: var(--card);
 }
 
