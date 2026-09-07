@@ -47,20 +47,20 @@ function Index() {
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-ink/45" />
-        <div className="relative mx-auto flex min-h-[86vh] max-w-6xl flex-col justify-center px-5 py-24">
-          <p className="mb-4 inline-flex w-fit border-4 border-ink bg-accent px-3 py-1 text-xs font-bold uppercase tracking-[0.3em] text-accent-foreground">
+        <div className="relative mx-auto flex min-h-[70vh] max-w-6xl flex-col justify-center px-5 py-16 sm:min-h-[86vh] sm:py-24">
+          <p className="mb-4 inline-flex w-fit border-4 border-ink bg-accent px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.3em] text-accent-foreground sm:text-xs">
             Tattoo studio
           </p>
-          <h1 className="manga-outline font-jojo text-[clamp(3.5rem,12vw,9rem)] text-primary">
+          <h1 className="manga-outline font-jojo text-[clamp(2.5rem,11vw,9rem)] leading-[0.95] text-primary">
             TOOSH TATTOOS
           </h1>
-          <p className="mt-6 max-w-xl text-lg text-foreground/90">
+          <p className="mt-6 max-w-xl text-base text-foreground/90 sm:text-lg">
             TATTOOS IN CHICAGO
           </p>
           <div className="mt-9">
             <Link
               to="/contact"
-              className="inline-flex border-4 border-ink bg-primary px-8 py-4 font-display text-lg uppercase text-primary-foreground shadow-[10px_10px_0_0_var(--ink)] transition-transform hover:translate-x-1 hover:translate-y-1 hover:shadow-[4px_4px_0_0_var(--ink)]"
+              className="inline-flex border-4 border-ink bg-primary px-6 py-3.5 font-display text-base uppercase text-primary-foreground shadow-[8px_8px_0_0_var(--ink)] transition-transform hover:translate-x-1 hover:translate-y-1 hover:shadow-[4px_4px_0_0_var(--ink)] sm:px-8 sm:py-4 sm:text-lg sm:shadow-[10px_10px_0_0_var(--ink)]"
             >
               Book a session
             </Link>

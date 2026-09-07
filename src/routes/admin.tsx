@@ -827,7 +827,7 @@ function BookingCard({
       </div>
       <a
         href={`mailto:${booking.email}`}
-        className="mt-1 block text-xs text-[#ffffff] underline"
+        className="mt-1 block break-all text-xs text-[#ffffff] underline"
       >
         {booking.email}
       </a>
@@ -1325,7 +1325,7 @@ function TeamPanel() {
                   className="flex flex-wrap items-center justify-between gap-2 border border-[#333333] bg-[#0a0a0a] px-3 py-2 text-xs"
                 >
                   <div className="min-w-0">
-                    <span className="text-[#e5e5e5]">{m.email}</span>
+                    <span className="break-all text-[#e5e5e5]">{m.email}</span>
                     {m.username && (
                       <span className="ml-2 text-[#6b6b6b]">@{m.username}</span>
                     )}

@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 
 import { useAuth, displayName } from "@/lib/use-auth";
 
@@ -45,15 +47,27 @@ function AdminMark({ className }: { className?: string }) {
 
 export function SiteHeader() {
   const { user, profile, isAdmin, loading } = useAuth();
+  const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
 
   return (
     <header className="sticky top-0 z-50 border-b-4 border-ink bg-ink/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
-        <Link to="/" className="group flex items-baseline gap-2">
-          <span className="font-jojo text-2xl text-primary">TOOSH</span>
-          <span className="font-jojo text-2xl text-secondary">TATTOOS</span>
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-5">
+        <Link
+          to="/"
+          onClick={close}
+          className="group flex items-baseline gap-1.5 sm:gap-2"
+        >
+          <span className="font-jojo text-xl text-primary sm:text-2xl">
+            TOOSH
+          </span>
+          <span className="font-jojo text-xl text-secondary sm:text-2xl">
+            TATTOOS
+          </span>
         </Link>
-        <nav className="flex items-center gap-1 text-sm font-bold uppercase tracking-[0.18em]">
+
+        {/* desktop nav */}
+        <nav className="hidden items-center gap-1 text-sm font-bold uppercase tracking-[0.18em] md:flex">
           {nav.map((item) => (
             <Link
               key={item.to}
@@ -102,7 +116,81 @@ export function SiteHeader() {
             ))
           )}
         </nav>
+
+        {/* mobile toggle */}
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
+          className="-mr-1 flex items-center p-2 text-primary md:hidden"
+        >
+          {open ? <X className="size-7" /> : <Menu className="size-7" />}
+        </button>
       </div>
+
+      {/* mobile menu */}
+      {open && (
+        <nav className="border-t-2 border-ink bg-ink text-base font-bold uppercase tracking-[0.18em] md:hidden">
+          {nav.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={close}
+              className="block border-b border-ink px-5 py-3.5 text-foreground/80 transition-colors hover:bg-background/40 hover:text-primary"
+              activeProps={{
+                className:
+                  "block border-b border-ink px-5 py-3.5 text-primary bg-background/40",
+              }}
+              activeOptions={{ exact: item.to === "/" }}
+            >
+              {item.label}
+            </Link>
+          ))}
+
+          {isAdmin && (
+            <Link
+              to="/admin"
+              onClick={close}
+              className="flex items-center gap-3 border-b border-ink px-5 py-3.5 text-primary"
+              activeProps={{
+                className:
+                  "flex items-center gap-3 border-b border-ink px-5 py-3.5 text-primary bg-background/40",
+              }}
+            >
+              <AdminMark className="h-5 w-auto" />
+              Admin
+            </Link>
+          )}
+
+          {loading ? null : user ? (
+            <Link
+              to="/account"
+              onClick={close}
+              className="block px-5 py-3.5 text-primary"
+              activeProps={{
+                className: "block px-5 py-3.5 text-primary underline",
+              }}
+            >
+              Sup {displayName(user, profile)}
+            </Link>
+          ) : (
+            authNav.map((item, i) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={close}
+                className={`block px-5 py-3.5 text-foreground/80 transition-colors hover:text-primary ${
+                  i === 0 ? "border-b border-ink" : ""
+                }`}
+                activeProps={{ className: "block px-5 py-3.5 text-primary" }}
+              >
+                {item.label}
+              </Link>
+            ))
+          )}
+        </nav>
+      )}
     </header>
   );
 }
@@ -111,7 +199,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t-4 border-primary bg-ink text-foreground">
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-10">
-        <p className="font-jojo text-3xl">TOOSH TATTOOS</p>
+        <p className="font-jojo text-2xl sm:text-3xl">TOOSH TATTOOS</p>
         <p className="text-sm uppercase tracking-[0.2em] opacity-80">
           OPEN TO CHANGE I DIDNT KNOW WHAT TO PUT HERE
         </p>

@@ -88,7 +88,7 @@ function ForgotPassword() {
 
   return (
     <main className="speed-lines bg-background">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 md:grid-cols-2">
+      <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:gap-12 sm:py-20 md:grid-cols-2">
         <div>
           <h1 className="manga-outline text-[clamp(2.5rem,7vw,5rem)] text-primary">
             FORGOT
