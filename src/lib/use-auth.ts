@@ -13,6 +13,7 @@ type AuthState = {
   user: User | null;
   profile: Profile | null;
   isAdmin: boolean;
+  isMaster: boolean;
   loading: boolean;
 };
 
@@ -60,9 +61,10 @@ export function useAuth(): AuthState {
     };
   }, []);
 
-  const isAdmin = profile?.role === "admin" || profile?.role === "master";
+  const isMaster = profile?.role === "master";
+  const isAdmin = profile?.role === "admin" || isMaster;
 
-  return { user, profile, isAdmin, loading };
+  return { user, profile, isAdmin, isMaster, loading };
 }
 
 /** Best display name for a user: their chosen username, falling back to email. */

@@ -22,12 +22,15 @@ import {
   listGallery,
   listRecentWork,
   listShop,
+  listTeam,
   removeClosure,
+  setUserRole,
   updateBookingStatus,
   uploadMedia,
   type Booking,
   type BookingStatus,
   type Frame,
+  type TeamMember,
 } from "@/lib/content";
 import {
   DURATION_OPTIONS,
@@ -1230,9 +1233,153 @@ function ClosuresPanel() {
   );
 }
 
+const ROLE_STYLE: Record<string, string> = {
+  master: "text-[#ffd479] border-[#ffd479]",
+  admin: "text-[#ffffff] border-[#ffffff]",
+  user: "text-[#8a8a8a] border-[#3a3a3a]",
+};
+
+/** Master-admin-only: grant / revoke admin on other accounts by email. */
+function TeamPanel() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+
+  const team = useQuery({ queryKey: ["team"], queryFn: listTeam });
+  const rows = team.data ?? [];
+  const adminCount = rows.filter(
+    (m) => m.role === "admin" || m.role === "master",
+  ).length;
+
+  const mutate = useMutation({
+    mutationFn: ({ email, role }: { email: string; role: "user" | "admin" }) =>
+      setUserRole(email, role),
+    onMutate: () => setErr(null),
+    onError: (e: unknown) =>
+      setErr(e instanceof Error ? e.message : "Could not change role."),
+    onSuccess: () => setEmail(""),
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["team"] }),
+  });
+
+  return (
+    <Panel
+      title="Team access"
+      subtitle={`${adminCount} with admin · master only`}
+      count={rows.length}
+      actions={
+        <TabButton active={open} onClick={() => setOpen((o) => !o)}>
+          {open ? "Hide" : "Manage"}
+        </TabButton>
+      }
+    >
+      {open && (
+        <div className="space-y-5 p-5">
+          <form
+            className="flex flex-wrap items-end gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const v = email.trim();
+              if (v) mutate.mutate({ email: v, role: "admin" });
+            }}
+          >
+            <label className="flex-1 text-[0.55rem] uppercase tracking-[0.25em] text-[#8a8a8a]">
+              Grant admin by email
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="person@example.com"
+                className="mt-1 w-full border border-[#3a3a3a] bg-[#0a0a0a] px-2 py-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#ffffff]"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={mutate.isPending || !email.trim()}
+              className="border border-[#ffffff] bg-[#ffffff] px-4 py-1.5 text-xs font-bold uppercase tracking-[0.1em] text-black transition-colors hover:bg-[#e0e0e0] disabled:opacity-50"
+            >
+              {mutate.isPending ? "…" : "Grant"}
+            </button>
+          </form>
+
+          {err && (
+            <p className="border border-[#7a1f1f] bg-[#1a0d0d] px-3 py-2 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-[#d98a8a]">
+              {err}
+            </p>
+          )}
+
+          <div className="space-y-1.5">
+            {team.isLoading ? (
+              <p className="text-xs uppercase tracking-[0.2em] text-[#6b6b6b]">
+                Loading…
+              </p>
+            ) : rows.length === 0 ? (
+              <p className="text-xs uppercase tracking-[0.2em] text-[#6b6b6b]">
+                No accounts
+              </p>
+            ) : (
+              rows.map((m) => (
+                <div
+                  key={m.email}
+                  className="flex flex-wrap items-center justify-between gap-2 border border-[#333333] bg-[#0a0a0a] px-3 py-2 text-xs"
+                >
+                  <div className="min-w-0">
+                    <span className="text-[#e5e5e5]">{m.email}</span>
+                    {m.username && (
+                      <span className="ml-2 text-[#6b6b6b]">@{m.username}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`border px-2 py-0.5 text-[0.55rem] font-bold uppercase tracking-[0.15em] ${
+                        ROLE_STYLE[m.role] ?? ROLE_STYLE["user"]
+                      }`}
+                    >
+                      {m.role}
+                    </span>
+                    {m.role === "master" ? (
+                      <span className="text-[0.55rem] uppercase tracking-[0.15em] text-[#6b6b6b]">
+                        SQL only
+                      </span>
+                    ) : m.role === "admin" ? (
+                      <button
+                        type="button"
+                        disabled={mutate.isPending}
+                        onClick={() =>
+                          mutate.mutate({ email: m.email, role: "user" })
+                        }
+                        className="border border-[#7a1f1f] px-2 py-1 text-[0.55rem] font-bold uppercase tracking-[0.1em] text-[#d98a8a] transition-colors hover:bg-[#7a1f1f] hover:text-[#f2f2f2] disabled:opacity-50"
+                      >
+                        Remove admin
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={mutate.isPending}
+                        onClick={() =>
+                          mutate.mutate({ email: m.email, role: "admin" })
+                        }
+                        className="border border-[#3a3a3a] px-2 py-1 text-[0.55rem] font-bold uppercase tracking-[0.1em] text-[#e5e5e5] transition-colors hover:border-[#ffffff] disabled:opacity-50"
+                      >
+                        Make admin
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 // --- page -------------------------------------------------------------------
 
 function Admin() {
+  const { isMaster } = useAuth();
   const qc = useQueryClient();
   const [pendingId, setPendingId] = useState<string | null>(null);
 
@@ -1431,6 +1578,8 @@ function Admin() {
           />
 
           <ClosuresPanel />
+
+          {isMaster && <TeamPanel />}
         </div>
       </div>
     </main>

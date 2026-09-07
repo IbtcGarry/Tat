@@ -206,6 +206,46 @@ export async function createBooking(input: {
   }
 }
 
+// --- team / roles (master admin only) -----------------------------------
+
+export type TeamMember = {
+  email: string;
+  username: string | null;
+  role: "user" | "admin" | "master";
+  created_at: string;
+};
+
+/** Master only: every account with its email + role (RLS/RPC enforced). */
+export async function listTeam(): Promise<TeamMember[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase.rpc("list_user_roles");
+  if (error) throw error;
+  return (data as TeamMember[]) ?? [];
+}
+
+/** Master only: grant ('admin') or revoke ('user') admin on an account by email. */
+export async function setUserRole(
+  email: string,
+  role: "user" | "admin",
+): Promise<void> {
+  const { error } = await supabase.rpc("set_user_role", {
+    target_email: email,
+    new_role: role,
+  });
+  if (error) {
+    const m = error.message || "";
+    if (/no account/i.test(m))
+      throw new Error(
+        "No account with that email — they need to sign up first.",
+      );
+    if (/is a master admin/i.test(m))
+      throw new Error("That account is a master admin — change it in SQL.");
+    if (/only master admins/i.test(m))
+      throw new Error("Only master admins can change roles.");
+    throw error;
+  }
+}
+
 // --- studio closures -----------------------------------------------------
 
 export type Closure = { day: string; reason: string | null };
