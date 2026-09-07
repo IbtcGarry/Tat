@@ -94,8 +94,6 @@
   --leopard-base: #f0f0ee;
   /* Black spots on a cream base — for the leopard accent bar */
   --leopard-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='%23000000'%3E%3Cellipse cx='35' cy='19' rx='7' ry='4.5' transform='rotate(0,35,19)'/%3E%3Cellipse cx='47' cy='28' rx='7' ry='4.5' transform='rotate(72,47,28)'/%3E%3Cellipse cx='42' cy='43' rx='7' ry='4.5' transform='rotate(144,42,43)'/%3E%3Cellipse cx='28' cy='43' rx='7' ry='4.5' transform='rotate(216,28,43)'/%3E%3Cellipse cx='23' cy='28' rx='7' ry='4.5' transform='rotate(288,23,28)'/%3E%3Cellipse cx='120' cy='32' rx='7' ry='4.5' transform='rotate(0,120,32)'/%3E%3Cellipse cx='132' cy='41' rx='7' ry='4.5' transform='rotate(72,132,41)'/%3E%3Cellipse cx='127' cy='56' rx='7' ry='4.5' transform='rotate(144,127,56)'/%3E%3Cellipse cx='113' cy='56' rx='7' ry='4.5' transform='rotate(216,113,56)'/%3E%3Cellipse cx='108' cy='41' rx='7' ry='4.5' transform='rotate(288,108,41)'/%3E%3Cellipse cx='70' cy='97' rx='7' ry='4.5' transform='rotate(0,70,97)'/%3E%3Cellipse cx='82' cy='106' rx='7' ry='4.5' transform='rotate(72,82,106)'/%3E%3Cellipse cx='77' cy='121' rx='7' ry='4.5' transform='rotate(144,77,121)'/%3E%3Cellipse cx='63' cy='121' rx='7' ry='4.5' transform='rotate(216,63,121)'/%3E%3Cellipse cx='58' cy='106' rx='7' ry='4.5' transform='rotate(288,58,106)'/%3E%3Cellipse cx='140' cy='117' rx='7' ry='4.5' transform='rotate(0,140,117)'/%3E%3Cellipse cx='152' cy='126' rx='7' ry='4.5' transform='rotate(72,152,126)'/%3E%3Cellipse cx='147' cy='141' rx='7' ry='4.5' transform='rotate(144,147,141)'/%3E%3Cellipse cx='133' cy='141' rx='7' ry='4.5' transform='rotate(216,133,141)'/%3E%3Cellipse cx='128' cy='126' rx='7' ry='4.5' transform='rotate(288,128,126)'/%3E%3C/g%3E%3Cg fill='%23000000'%3E%3Ccircle cx='80' cy='25' r='3'/%3E%3Ccircle cx='60' cy='70' r='3'/%3E%3Ccircle cx='110' cy='90' r='3'/%3E%3Ccircle cx='30' cy='95' r='3'/%3E%3Ccircle cx='150' cy='80' r='3'/%3E%3Ccircle cx='95' cy='150' r='3'/%3E%3Ccircle cx='45' cy='140' r='3'/%3E%3Ccircle cx='135' cy='175' r='3'/%3E%3C/g%3E%3C/svg%3E");
-  /* White spots — inverted, for the wash over the black page background */
-  --leopard-img-inverse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='%23ffffff'%3E%3Cellipse cx='35' cy='19' rx='7' ry='4.5' transform='rotate(0,35,19)'/%3E%3Cellipse cx='47' cy='28' rx='7' ry='4.5' transform='rotate(72,47,28)'/%3E%3Cellipse cx='42' cy='43' rx='7' ry='4.5' transform='rotate(144,42,43)'/%3E%3Cellipse cx='28' cy='43' rx='7' ry='4.5' transform='rotate(216,28,43)'/%3E%3Cellipse cx='23' cy='28' rx='7' ry='4.5' transform='rotate(288,23,28)'/%3E%3Cellipse cx='120' cy='32' rx='7' ry='4.5' transform='rotate(0,120,32)'/%3E%3Cellipse cx='132' cy='41' rx='7' ry='4.5' transform='rotate(72,132,41)'/%3E%3Cellipse cx='127' cy='56' rx='7' ry='4.5' transform='rotate(144,127,56)'/%3E%3Cellipse cx='113' cy='56' rx='7' ry='4.5' transform='rotate(216,113,56)'/%3E%3Cellipse cx='108' cy='41' rx='7' ry='4.5' transform='rotate(288,108,41)'/%3E%3Cellipse cx='70' cy='97' rx='7' ry='4.5' transform='rotate(0,70,97)'/%3E%3Cellipse cx='82' cy='106' rx='7' ry='4.5' transform='rotate(72,82,106)'/%3E%3Cellipse cx='77' cy='121' rx='7' ry='4.5' transform='rotate(144,77,121)'/%3E%3Cellipse cx='63' cy='121' rx='7' ry='4.5' transform='rotate(216,63,121)'/%3E%3Cellipse cx='58' cy='106' rx='7' ry='4.5' transform='rotate(288,58,106)'/%3E%3Cellipse cx='140' cy='117' rx='7' ry='4.5' transform='rotate(0,140,117)'/%3E%3Cellipse cx='152' cy='126' rx='7' ry='4.5' transform='rotate(72,152,126)'/%3E%3Cellipse cx='147' cy='141' rx='7' ry='4.5' transform='rotate(144,147,141)'/%3E%3Cellipse cx='133' cy='141' rx='7' ry='4.5' transform='rotate(216,133,141)'/%3E%3Cellipse cx='128' cy='126' rx='7' ry='4.5' transform='rotate(288,128,126)'/%3E%3C/g%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='80' cy='25' r='3'/%3E%3Ccircle cx='60' cy='70' r='3'/%3E%3Ccircle cx='110' cy='90' r='3'/%3E%3Ccircle cx='30' cy='95' r='3'/%3E%3Ccircle cx='150' cy='80' r='3'/%3E%3Ccircle cx='95' cy='150' r='3'/%3E%3Ccircle cx='45' cy='140' r='3'/%3E%3Ccircle cx='135' cy='175' r='3'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 @layer base {
@@ -217,7 +215,8 @@
   background-size: 120px 120px;
 }
 
-/* Black & white admin surface with a visible leopard-print wash */
+/* Black admin surface with a faint JoJo-motif wash (spiral, stone mask,
+   menacing ゴゴゴ, skull emblem, the leaning figure). */
 @utility admin-skin {
   background-color: var(--admin-bg);
   color: var(--admin-fg);
@@ -227,8 +226,8 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background-image: var(--leopard-img-inverse);
-    background-size: 240px 240px;
-    opacity: 0.14;
+    background-image: url("/admin-jojo.svg");
+    background-size: 380px 380px;
+    opacity: 0.11;
   }
 }
