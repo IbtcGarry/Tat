@@ -16,7 +16,10 @@ export const Route = createFileRoute("/")({
         content:
           "Toosh Tattoos is a tattoo studio for bold outlines, screentone shading and unbreakable design. Book a session.",
       },
-      { property: "og:title", content: "Toosh Tattoos — Bizarre Tattoo Studio" },
+      {
+        property: "og:title",
+        content: "Toosh Tattoos — Bizarre Tattoo Studio",
+      },
       {
         property: "og:description",
         content:
@@ -59,7 +62,7 @@ function Index() {
           <div className="mt-9">
             <Link
               to="/contact"
-              className="inline-flex border-4 border-ink bg-secondary px-8 py-4 font-display text-lg uppercase text-secondary-foreground shadow-[10px_10px_0_0_var(--ink)] transition-transform hover:translate-x-1 hover:translate-y-1 hover:shadow-[4px_4px_0_0_var(--ink)]"
+              className="inline-flex border-4 border-ink bg-primary px-8 py-4 font-display text-lg uppercase text-primary-foreground shadow-[10px_10px_0_0_var(--ink)] transition-transform hover:translate-x-1 hover:translate-y-1 hover:shadow-[4px_4px_0_0_var(--ink)]"
             >
               Book a session
             </Link>

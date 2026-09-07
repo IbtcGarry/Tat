@@ -124,7 +124,7 @@ function SignUp() {
             </p>
           )}
           {status === "done" && (
-            <p className="border-4 border-ink bg-secondary px-4 py-3 text-sm font-bold uppercase tracking-[0.15em] text-secondary-foreground">
+            <p className="border-4 border-ink bg-background px-4 py-3 text-sm font-bold uppercase tracking-[0.15em] text-foreground">
               Check your email to confirm your account.
             </p>
           )}

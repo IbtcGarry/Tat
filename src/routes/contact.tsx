@@ -195,7 +195,7 @@ function Contact() {
                             ? "border-ink bg-primary text-primary-foreground"
                             : s.disabled
                               ? "border-ink/30 text-muted-foreground line-through"
-                              : "border-ink bg-background text-foreground hover:bg-secondary hover:text-secondary-foreground"
+                              : "border-ink bg-background text-foreground hover:bg-primary hover:text-primary-foreground"
                         }`}
                       >
                         {s.label}
@@ -258,7 +258,7 @@ function Contact() {
                 : "Pick a date & time"}
           </button>
           {mutation.isSuccess && (
-            <p className="border-4 border-ink bg-secondary px-4 py-3 text-sm font-bold uppercase tracking-[0.15em] text-secondary-foreground">
+            <p className="border-4 border-ink bg-background px-4 py-3 text-sm font-bold uppercase tracking-[0.15em] text-foreground">
               Request sent — we confirm your session by email within two days.
             </p>
           )}

@@ -109,7 +109,7 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="border-t-4 border-ink bg-secondary text-secondary-foreground">
+    <footer className="border-t-4 border-primary bg-ink text-foreground">
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-10">
         <p className="font-jojo text-3xl">TOOSH TATTOOS</p>
         <p className="text-sm uppercase tracking-[0.2em] opacity-80">
