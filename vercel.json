@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "npm run build",
+  "build": {
+    "env": {
+      "NITRO_PRESET": "vercel",
+      "VITE_SUPABASE_URL": "https://bctpojoyqbehzexdotgk.supabase.co",
+      "VITE_SUPABASE_ANON_KEY": "sb_publishable_g6BZ3Z4zEQd3WijspSPHRg_KVPbDA4c"
+    }
+  }
+}
