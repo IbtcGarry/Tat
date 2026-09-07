@@ -120,6 +120,13 @@ function Login() {
             {status === "loading" ? "Logging in…" : "Log in"}
           </button>
 
+          <Link
+            to="/forgot-password"
+            className="block text-center text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground underline"
+          >
+            Forgot your password?
+          </Link>
+
           {error && (
             <p className="border-4 border-ink bg-destructive px-4 py-3 text-sm font-bold uppercase tracking-[0.15em] text-destructive-foreground">
               {error}
