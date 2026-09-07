@@ -190,11 +190,6 @@
   }
 }
 
-/* Skip button freezes the loop (unlayered so it beats the utility). */
-.marquee-right.is-paused {
-  animation-play-state: paused;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .marquee-right {
     animation: none;

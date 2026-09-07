@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
@@ -31,7 +30,6 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const [marqueePaused, setMarqueePaused] = useState(false);
   const { data: works = [], isLoading } = useQuery({
     queryKey: ["recent_work"],
     queryFn: listRecentWork,
@@ -72,11 +70,7 @@ function Index() {
 
       {/* MARQUEE STRIP */}
       <section className="skew-strip relative -mt-6 overflow-hidden border-y-4 border-ink bg-primary py-3">
-        <div
-          className={`marquee-right flex w-max items-center font-display text-xl uppercase tracking-[0.35em] text-primary-foreground ${
-            marqueePaused ? "is-paused" : ""
-          }`}
-        >
+        <div className="marquee-right flex w-max items-center font-display text-xl uppercase tracking-[0.35em] text-primary-foreground">
           {[0, 1].map((i) => (
             <span
               key={i}
@@ -99,15 +93,6 @@ function Index() {
             </span>
           ))}
         </div>
-
-        <button
-          type="button"
-          onClick={() => setMarqueePaused((p) => !p)}
-          aria-pressed={marqueePaused}
-          className="absolute right-2 top-1/2 z-10 -translate-y-1/2 border-2 border-ink bg-background px-2 py-1 font-display text-[0.65rem] uppercase tracking-[0.15em] text-foreground shadow-[3px_3px_0_0_var(--ink)] transition-transform hover:translate-x-0.5 hover:translate-y-[calc(-50%+2px)] hover:shadow-none"
-        >
-          {marqueePaused ? "Play" : "Skip"}
-        </button>
       </section>
 
       {/* WORKS */}
