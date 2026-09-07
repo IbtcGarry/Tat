@@ -17,6 +17,32 @@ const authNav = [
 const linkClass =
   "px-3 py-2 text-foreground/70 transition-colors hover:text-primary";
 
+/** Hand-drawn "leaning figure" mark used for the Admin link. Inherits currentColor. */
+function AdminMark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 60 120"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={6.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      role="img"
+      aria-hidden="true"
+    >
+      <circle cx="33" cy="15" r="11.5" />
+      {/* torso: left shoulder · neck peak · right shoulder · right hip · left hip */}
+      <path d="M20 34 L33 29 L46 34 L42 60 L26 60 Z" />
+      {/* left arm, hand on hip */}
+      <path d="M20 34 L12 56 L28 51" />
+      {/* legs, splayed with a foot kick */}
+      <path d="M27 59 L22 96 L16 99" />
+      <path d="M41 59 L46 101 L58 114" />
+    </svg>
+  );
+}
+
 export function SiteHeader() {
   const { user, profile, isAdmin, loading } = useAuth();
 
@@ -43,13 +69,15 @@ export function SiteHeader() {
           {isAdmin && (
             <Link
               to="/admin"
-              className="border-2 border-primary px-3 py-2 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+              aria-label="Admin"
+              title="Admin"
+              className="ml-1 flex items-center border-2 border-primary px-2 py-1 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
               activeProps={{
                 className:
-                  "border-2 border-primary bg-primary px-3 py-2 text-primary-foreground",
+                  "ml-1 flex items-center border-2 border-primary bg-primary px-2 py-1 text-primary-foreground",
               }}
             >
-              Admin
+              <AdminMark className="h-6 w-auto" />
             </Link>
           )}
 
