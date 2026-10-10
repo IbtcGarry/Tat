@@ -59,7 +59,7 @@ function Login() {
     }
 
     setStatus("done");
-    await router.navigate({ to: "/" });
+    await router.navigate({ to: "/admin" });
   }
 
   return (
@@ -72,14 +72,14 @@ function Login() {
             IN
           </h1>
           <p className="mt-8 max-w-md text-lg text-foreground/90">
-            Welcome back. Don't have an account yet?{" "}
+            Admins only. New to the team?{" "}
             <Link
               to="/signup"
               className="border-b-4 border-primary font-bold text-primary"
             >
-              Sign up
+              Make an account
             </Link>
-            .
+            , then ask the master admin to give you access.
           </p>
         </div>
 

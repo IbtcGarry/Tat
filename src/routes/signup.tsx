@@ -9,8 +9,7 @@ export const Route = createFileRoute("/signup")({
       { title: "Sign Up — Toosh Tattoos" },
       {
         name: "description",
-        content:
-          "Create a Toosh Tattoos account to book sessions and track your pieces.",
+        content: "Create a Toosh Tattoos admin account.",
       },
       { property: "og:title", content: "Sign Up — Toosh Tattoos" },
       {

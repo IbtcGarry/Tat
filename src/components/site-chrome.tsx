@@ -1,19 +1,13 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
-import { useAuth, displayName } from "@/lib/use-auth";
+import { useAuth } from "@/lib/use-auth";
+import { supabase } from "@/lib/supabase";
 
 const nav = [
   { to: "/", label: "Home" },
   { to: "/gallery", label: "Gallery" },
-  { to: "/shop", label: "Shop" },
-  { to: "/contact", label: "Book" },
-] as const;
-
-const authNav = [
-  { to: "/login", label: "Log In" },
-  { to: "/signup", label: "Sign Up" },
 ] as const;
 
 const linkClass =
@@ -46,9 +40,13 @@ function AdminMark({ className }: { className?: string }) {
 }
 
 export function SiteHeader() {
-  const { user, profile, isAdmin, loading } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
+  const signOut = () => {
+    void supabase.auth.signOut().then(() => router.navigate({ to: "/" }));
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b-4 border-ink bg-ink/95 backdrop-blur">
@@ -95,25 +93,14 @@ export function SiteHeader() {
             </Link>
           )}
 
-          {loading ? null : user ? (
-            <Link
-              to="/account"
-              className="pl-3 text-primary transition-colors hover:text-primary/80"
-              activeProps={{ className: "pl-3 text-primary underline" }}
+          {!loading && user && (
+            <button
+              type="button"
+              onClick={signOut}
+              className={`${linkClass} uppercase tracking-[0.18em]`}
             >
-              Sup {displayName(user, profile)}
-            </Link>
-          ) : (
-            authNav.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={linkClass}
-                activeProps={{ className: "px-3 py-2 text-primary" }}
-              >
-                {item.label}
-              </Link>
-            ))
+              Sign out
+            </button>
           )}
         </nav>
 
@@ -163,31 +150,17 @@ export function SiteHeader() {
             </Link>
           )}
 
-          {loading ? null : user ? (
-            <Link
-              to="/account"
-              onClick={close}
-              className="block px-5 py-3.5 text-primary"
-              activeProps={{
-                className: "block px-5 py-3.5 text-primary underline",
+          {!loading && user && (
+            <button
+              type="button"
+              onClick={() => {
+                close();
+                signOut();
               }}
+              className="block w-full px-5 py-3.5 text-left uppercase tracking-[0.18em] text-foreground/80 transition-colors hover:text-primary"
             >
-              Sup {displayName(user, profile)}
-            </Link>
-          ) : (
-            authNav.map((item, i) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={close}
-                className={`block px-5 py-3.5 text-foreground/80 transition-colors hover:text-primary ${
-                  i === 0 ? "border-b border-ink" : ""
-                }`}
-                activeProps={{ className: "block px-5 py-3.5 text-primary" }}
-              >
-                {item.label}
-              </Link>
-            ))
+              Sign out
+            </button>
           )}
         </nav>
       )}
@@ -203,6 +176,13 @@ export function SiteFooter() {
         <p className="text-sm uppercase tracking-[0.2em] opacity-80">
           OPEN TO CHANGE I DIDNT KNOW WHAT TO PUT HERE
         </p>
+        {/* Visitors don't need accounts; this is the artists' way in. */}
+        <Link
+          to="/login"
+          className="mt-4 w-fit text-xs uppercase tracking-[0.25em] opacity-60 transition-opacity hover:opacity-100"
+        >
+          Admin login
+        </Link>
       </div>
     </footer>
   );

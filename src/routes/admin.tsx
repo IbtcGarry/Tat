@@ -1,43 +1,29 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { format, isSameDay } from "date-fns";
+import { useEffect, useRef, useState } from "react";
 
-import { Calendar } from "@/components/ui/calendar";
 import { useAuth } from "@/lib/use-auth";
 import {
-  BOOKING_STATUSES,
   FRAME_OPTIONS,
-  acceptBooking,
-  addClosure,
   addGalleryItem,
+  addGallerySection,
   addRecentWork,
-  addShopItem,
-  deleteBooking,
   deleteContent,
+  deleteGallerySection,
   frameClassName,
   imageCropStyle,
-  listBookings,
-  listClosures,
   listGallery,
+  listGallerySections,
   listRecentWork,
-  listShop,
   listTeam,
-  removeClosure,
+  renameGallerySection,
+  saveGallerySectionOrder,
+  setGalleryItemSection,
   setUserRole,
-  updateBookingStatus,
   uploadMedia,
-  type Booking,
-  type BookingStatus,
   type Frame,
-  type TeamMember,
+  type GallerySection,
 } from "@/lib/content";
-import {
-  DURATION_OPTIONS,
-  dayKey,
-  fromLocalInput,
-  toLocalInput,
-} from "@/lib/booking-schedule";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -75,6 +61,14 @@ type Item = {
   id: string;
   image_url: string;
   fields: { label: string; value: string }[];
+  /** Gallery items only: the section it's filed under (null = none). */
+  section_id?: string | null | undefined;
+};
+
+/** What the Gallery panel passes down so items can be filed into sections. */
+type SectionControls = {
+  sections: GallerySection[];
+  onMove: (id: string, sectionId: string | null) => void;
 };
 
 function TabButton({
@@ -105,6 +99,42 @@ const labelClass =
   "block text-[0.6rem] font-bold uppercase tracking-[0.25em] text-[#8a8a8a]";
 const inputClass =
   "mt-1.5 w-full border border-[#3a3a3a] bg-[#0a0a0a] px-3 py-2 text-sm text-[#e5e5e5] outline-none focus:border-[#ffffff]";
+
+function SectionSelect({
+  id,
+  sections,
+  value,
+  disabled = false,
+  onChange,
+}: {
+  id: string;
+  sections: GallerySection[];
+  value: string;
+  disabled?: boolean;
+  onChange: (sectionId: string) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className={labelClass}>
+        Section
+      </label>
+      <select
+        id={id}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className={inputClass}
+      >
+        <option value="">No section</option>
+        {sections.map((sec) => (
+          <option key={sec.id} value={sec.id}>
+            {sec.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 const DEFAULT_VALUES: Record<string, string> = {
   frame: "plain",
@@ -300,10 +330,12 @@ function FramedPreview({
 function AddForm({
   fields,
   previewRatio,
+  sections,
   onAdd,
 }: {
   fields: FieldDef[];
   previewRatio: string;
+  sections?: GallerySection[] | undefined;
   onAdd: (values: Record<string, string>, imageUrl: string) => Promise<void>;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -385,6 +417,15 @@ function AddForm({
         </div>
       ))}
 
+      {sections && (
+        <SectionSelect
+          id="admin-section"
+          sections={sections}
+          value={values["section_id"] ?? ""}
+          onChange={(section_id) => setValues((s) => ({ ...s, section_id }))}
+        />
+      )}
+
       <FramePicker
         value={frame}
         onChange={(next) => setValues((s) => ({ ...s, frame: next }))}
@@ -432,10 +473,12 @@ function ItemInventory({
   items,
   pendingId,
   onDelete,
+  sectionControls,
 }: {
   items: Item[];
   pendingId: string | null;
   onDelete: (id: string) => void;
+  sectionControls?: SectionControls | undefined;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = items.find((i) => i.id === selectedId) ?? null;
@@ -491,6 +534,19 @@ function ItemInventory({
                 </div>
               ))}
             </dl>
+            {sectionControls && (
+              <div className="mt-3">
+                <SectionSelect
+                  id="admin-move-section"
+                  sections={sectionControls.sections}
+                  value={selected.section_id ?? ""}
+                  disabled={pendingId === selected.id}
+                  onChange={(sectionId) =>
+                    sectionControls.onMove(selected.id, sectionId || null)
+                  }
+                />
+              </div>
+            )}
             <button
               type="button"
               disabled={pendingId === selected.id}
@@ -555,6 +611,7 @@ function ContentPanel({
   pendingId,
   onAdd,
   onDelete,
+  sectionControls,
 }: {
   title: string;
   subtitle: string;
@@ -564,6 +621,7 @@ function ContentPanel({
   pendingId: string | null;
   onAdd: (values: Record<string, string>, imageUrl: string) => Promise<void>;
   onDelete: (id: string) => void;
+  sectionControls?: SectionControls | undefined;
 }) {
   const [view, setView] = useState<null | "items" | "add">(null);
 
@@ -594,6 +652,7 @@ function ContentPanel({
           items={items}
           pendingId={pendingId}
           onDelete={onDelete}
+          sectionControls={sectionControls}
         />
       )}
       {view === "add" && (
@@ -601,6 +660,7 @@ function ContentPanel({
           <AddForm
             fields={fields}
             previewRatio={previewRatio}
+            sections={sectionControls?.sections}
             onAdd={async (v, url) => {
               await onAdd(v, url);
               setView("items");
@@ -612,621 +672,182 @@ function ContentPanel({
   );
 }
 
-const STATUS_STYLE: Record<BookingStatus, string> = {
-  new: "text-[#ffffff]",
-  contacted: "text-[#ffffff]",
-  booked: "text-[#ffffff]",
-  declined: "text-[#c98a8a]",
-};
-
-function whenLabel(b: Booking): string {
-  if (!b.starts_at) return "—";
-  const start = new Date(b.starts_at);
-  const end = b.ends_at ? new Date(b.ends_at) : null;
-  return end
-    ? `${format(start, "EEE d MMM · h:mm a")} – ${format(end, "h:mm a")}`
-    : format(start, "EEE d MMM · h:mm a");
-}
-
-function StatusSelect({
-  booking,
-  pending,
-  onStatus,
+/** Create, rename, reorder and delete the Gallery page's sections. */
+function SectionsPanel({
+  sections,
+  counts,
 }: {
-  booking: Booking;
-  pending: boolean;
-  onStatus: (id: string, status: BookingStatus) => void;
+  sections: GallerySection[];
+  counts: Record<string, number>;
 }) {
-  return (
-    <select
-      value={booking.status}
-      disabled={pending}
-      onChange={(e) => onStatus(booking.id, e.target.value as BookingStatus)}
-      className={`border border-[#3a3a3a] bg-[#0a0a0a] px-2 py-1 text-xs font-bold uppercase ${STATUS_STYLE[booking.status]}`}
-    >
-      {BOOKING_STATUSES.map((s) => (
-        <option key={s} value={s} className="text-[#e5e5e5]">
-          {s}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function DeleteButton({
-  id,
-  pending,
-  onDelete,
-}: {
-  id: string;
-  pending: boolean;
-  onDelete: (id: string) => void;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={pending}
-      onClick={() => onDelete(id)}
-      className="border border-[#7a1f1f] px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-[#d98a8a] transition-colors hover:bg-[#7a1f1f] hover:text-[#f2f2f2] disabled:opacity-50"
-    >
-      Delete
-    </button>
-  );
-}
-
-/** Inline "accept this request at time X for Y minutes" editor. */
-function ScheduleEditor({
-  booking,
-  defaultStart,
-  onAccept,
-}: {
-  booking: Booking;
-  defaultStart?: Date;
-  onAccept: (
-    id: string,
-    startIso: string,
-    durationMin: number,
-  ) => Promise<void>;
-}) {
-  const seed = () =>
-    booking.starts_at
-      ? new Date(booking.starts_at)
-      : (defaultStart ?? new Date());
-
-  const [editing, setEditing] = useState(false);
-  const [startInput, setStartInput] = useState(() => toLocalInput(seed()));
-  const [duration, setDuration] = useState(booking.duration_min || 120);
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  const isBooked = booking.status === "booked";
-
-  function open() {
-    setStartInput(toLocalInput(seed()));
-    setDuration(booking.duration_min || 120);
-    setErr(null);
-    setEditing(true);
-  }
-
-  async function confirm() {
-    setSaving(true);
-    setErr(null);
-    try {
-      await onAccept(
-        booking.id,
-        fromLocalInput(startInput).toISOString(),
-        duration,
-      );
-      setEditing(false);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Could not save.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (!editing) {
-    return (
-      <button
-        type="button"
-        onClick={open}
-        className="border border-[#3a3a3a] px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-[#e5e5e5] transition-colors hover:border-[#ffffff]"
-      >
-        {isBooked ? "Adjust time" : "Accept & set time"}
-      </button>
-    );
-  }
-
-  return (
-    <div className="mt-1 space-y-2 border border-[#3a3a3a] bg-[#111111] p-2">
-      <label className="block text-[0.55rem] uppercase tracking-[0.25em] text-[#8a8a8a]">
-        Start
-        <input
-          type="datetime-local"
-          value={startInput}
-          onChange={(e) => setStartInput(e.target.value)}
-          className="mt-1 w-full border border-[#3a3a3a] bg-[#0a0a0a] px-2 py-1 text-xs text-[#e5e5e5] outline-none focus:border-[#ffffff] [color-scheme:dark]"
-        />
-      </label>
-      <label className="block text-[0.55rem] uppercase tracking-[0.25em] text-[#8a8a8a]">
-        Length
-        <select
-          value={duration}
-          onChange={(e) => setDuration(Number(e.target.value))}
-          className="mt-1 w-full border border-[#3a3a3a] bg-[#0a0a0a] px-2 py-1 text-xs text-[#e5e5e5] outline-none focus:border-[#ffffff]"
-        >
-          {DURATION_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={confirm}
-          className="flex-1 border border-[#ffffff] bg-[#ffffff] px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-black transition-colors hover:bg-[#e0e0e0] disabled:opacity-60"
-        >
-          {saving ? "Saving…" : isBooked ? "Update" : "Confirm booking"}
-        </button>
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => setEditing(false)}
-          className="border border-[#3a3a3a] px-3 py-1 text-xs uppercase tracking-[0.1em] text-[#9a9a9a] transition-colors hover:border-[#8a8a8a]"
-        >
-          Cancel
-        </button>
-      </div>
-      {err && (
-        <p className="border border-[#7a1f1f] bg-[#1a0d0d] px-2 py-1 text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#d98a8a]">
-          {err}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function BookingCard({
-  booking,
-  defaultStart,
-  pendingId,
-  onStatus,
-  onDelete,
-  onAccept,
-}: {
-  booking: Booking;
-  defaultStart?: Date;
-  pendingId: string | null;
-  onStatus: (id: string, status: BookingStatus) => void;
-  onDelete: (id: string) => void;
-  onAccept: (
-    id: string,
-    startIso: string,
-    durationMin: number,
-  ) => Promise<void>;
-}) {
-  const headline =
-    booking.status === "booked" && booking.starts_at
-      ? whenLabel(booking)
-      : booking.starts_at
-        ? `Wants ${format(new Date(booking.starts_at), "EEE d MMM · h:mm a")}`
-        : "No time requested";
-
-  return (
-    <div className="border border-[#333333] bg-[#0a0a0a] p-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="font-display text-sm uppercase tracking-[0.1em] text-[#ffffff]">
-          {headline}
-        </span>
-        <span className="text-[0.6rem] uppercase tracking-[0.2em] text-[#9a9a9a]">
-          {booking.name}
-        </span>
-      </div>
-      <a
-        href={`mailto:${booking.email}`}
-        className="mt-1 block break-all text-xs text-[#ffffff] underline"
-      >
-        {booking.email}
-      </a>
-      {booking.placement && (
-        <p className="mt-1 text-xs text-[#e5e5e5]">{booking.placement}</p>
-      )}
-      {booking.idea && (
-        <p className="mt-1 whitespace-pre-wrap text-xs text-[#9a9a9a]">
-          {booking.idea}
-        </p>
-      )}
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <StatusSelect
-          booking={booking}
-          pending={pendingId === booking.id}
-          onStatus={onStatus}
-        />
-        <ScheduleEditor
-          booking={booking}
-          defaultStart={defaultStart}
-          onAccept={onAccept}
-        />
-        <DeleteButton
-          id={booking.id}
-          pending={pendingId === booking.id}
-          onDelete={onDelete}
-        />
-      </div>
-    </div>
-  );
-}
-
-function BookingsPanel({
-  bookings,
-  isLoading,
-  pendingId,
-  onStatus,
-  onDelete,
-  onAccept,
-}: {
-  bookings: Booking[];
-  isLoading: boolean;
-  pendingId: string | null;
-  onStatus: (id: string, status: BookingStatus) => void;
-  onDelete: (id: string) => void;
-  onAccept: (
-    id: string,
-    startIso: string,
-    durationMin: number,
-  ) => Promise<void>;
-}) {
-  const [view, setView] = useState<null | "list" | "calendar">(null);
-  const [day, setDay] = useState<Date | undefined>(new Date());
-
-  const noonOn = (d?: Date) => {
-    if (!d) return undefined;
-    const x = new Date(d);
-    x.setHours(12, 0, 0, 0);
-    return x;
-  };
-
-  // Only admin-confirmed bookings hold a slot; the rest are open requests.
-  const confirmed = useMemo(
-    () =>
-      bookings
-        .filter((b) => b.status === "booked" && b.starts_at)
-        .sort((a, b) => a.starts_at!.localeCompare(b.starts_at!)),
-    [bookings],
-  );
-  const requests = useMemo(
-    () =>
-      bookings
-        .filter((b) => b.status === "new" || b.status === "contacted")
-        .sort((a, b) =>
-          (a.starts_at ?? a.created_at).localeCompare(
-            b.starts_at ?? b.created_at,
-          ),
-        ),
-    [bookings],
-  );
-  const bookedDays = useMemo(
-    () => confirmed.map((b) => new Date(b.starts_at!)),
-    [confirmed],
-  );
-  const dayEvents = day
-    ? confirmed.filter((b) => isSameDay(new Date(b.starts_at!), day))
-    : [];
-  const upcoming = confirmed.filter(
-    (b) => new Date(b.ends_at ?? b.starts_at!).getTime() >= Date.now(),
-  );
-
-  return (
-    <Panel
-      title="Bookings"
-      subtitle={`${confirmed.length} confirmed · ${requests.length} request${
-        requests.length === 1 ? "" : "s"
-      } to review`}
-      count={bookings.length}
-      actions={
-        <>
-          <TabButton
-            active={view === "calendar"}
-            onClick={() =>
-              setView((v) => (v === "calendar" ? null : "calendar"))
-            }
-          >
-            Calendar
-          </TabButton>
-          <TabButton
-            active={view === "list"}
-            onClick={() => setView((v) => (v === "list" ? null : "list"))}
-          >
-            List
-          </TabButton>
-        </>
-      }
-    >
-      {view === "list" &&
-        (bookings.length === 0 ? (
-          <p className="px-5 py-10 text-center text-xs uppercase tracking-[0.3em] text-[#6b6b6b]">
-            {isLoading ? "Loading…" : "No bookings yet"}
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <p className="px-4 pt-3 text-[0.6rem] uppercase tracking-[0.2em] text-[#6b6b6b]">
-              Accept requests &amp; set their time from the Calendar view
-            </p>
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-[#333333] text-left font-display text-xs uppercase tracking-[0.15em] text-[#d4d4d4]">
-                  <th className="px-4 py-2.5">When</th>
-                  <th className="px-4 py-2.5">Name</th>
-                  <th className="px-4 py-2.5">Email</th>
-                  <th className="px-4 py-2.5">Placement</th>
-                  <th className="px-4 py-2.5">Idea</th>
-                  <th className="px-4 py-2.5">Status</th>
-                  <th className="px-4 py-2.5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bookings.map((b) => (
-                  <tr
-                    key={b.id}
-                    className="border-b border-[#262626] align-top"
-                  >
-                    <td className="px-4 py-2.5 whitespace-nowrap text-[#9a9a9a]">
-                      {whenLabel(b)}
-                    </td>
-                    <td className="px-4 py-2.5 text-[#e5e5e5]">{b.name}</td>
-                    <td className="px-4 py-2.5">
-                      <a
-                        href={`mailto:${b.email}`}
-                        className="text-[#ffffff] underline"
-                      >
-                        {b.email}
-                      </a>
-                    </td>
-                    <td className="px-4 py-2.5 text-[#e5e5e5]">
-                      {b.placement || "—"}
-                    </td>
-                    <td className="max-w-xs px-4 py-2.5 whitespace-pre-wrap text-[#e5e5e5]">
-                      {b.idea || "—"}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <StatusSelect
-                        booking={b}
-                        pending={pendingId === b.id}
-                        onStatus={onStatus}
-                      />
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <DeleteButton
-                        id={b.id}
-                        pending={pendingId === b.id}
-                        onDelete={onDelete}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ))}
-
-      {view === "calendar" && (
-        <div className="grid gap-5 p-5 lg:grid-cols-[auto_minmax(0,1fr)]">
-          <div className="self-start border border-[#333333] bg-[#0a0a0a] p-2">
-            <Calendar
-              mode="single"
-              selected={day}
-              onSelect={setDay}
-              modifiers={{ booked: bookedDays }}
-              modifiersClassNames={{
-                booked:
-                  "relative after:absolute after:bottom-1 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-primary",
-              }}
-            />
-          </div>
-
-          <div className="space-y-5">
-            <div>
-              <h3 className="font-display text-xs uppercase tracking-[0.2em] text-[#d4d4d4]">
-                {day ? format(day, "EEEE d MMMM") : "Pick a day"} · confirmed
-              </h3>
-              <div className="mt-2 space-y-2">
-                {dayEvents.length === 0 ? (
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#6b6b6b]">
-                    Nothing confirmed this day
-                  </p>
-                ) : (
-                  dayEvents.map((b) => (
-                    <BookingCard
-                      key={b.id}
-                      booking={b}
-                      defaultStart={noonOn(day)}
-                      pendingId={pendingId}
-                      onStatus={onStatus}
-                      onDelete={onDelete}
-                      onAccept={onAccept}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-display text-xs uppercase tracking-[0.2em] text-[#d4d4d4]">
-                Requests to review
-                {requests.length > 0 ? ` · ${requests.length}` : ""}
-              </h3>
-              <div className="mt-2 space-y-2">
-                {requests.length === 0 ? (
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#6b6b6b]">
-                    No open requests
-                  </p>
-                ) : (
-                  requests.map((b) => (
-                    <BookingCard
-                      key={b.id}
-                      booking={b}
-                      defaultStart={noonOn(day)}
-                      pendingId={pendingId}
-                      onStatus={onStatus}
-                      onDelete={onDelete}
-                      onAccept={onAccept}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-
-            {upcoming.length > 0 && (
-              <div>
-                <h3 className="font-display text-xs uppercase tracking-[0.2em] text-[#d4d4d4]">
-                  Next up
-                </h3>
-                <ul className="mt-2 space-y-1 text-xs text-[#9a9a9a]">
-                  {upcoming.slice(0, 6).map((b) => (
-                    <li key={b.id}>
-                      <button
-                        type="button"
-                        onClick={() => setDay(new Date(b.starts_at!))}
-                        className="text-left hover:text-[#ffffff]"
-                      >
-                        {format(new Date(b.starts_at!), "EEE d MMM · h:mm a")} —{" "}
-                        {b.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </Panel>
-  );
-}
-
-function ClosuresPanel() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [pick, setPick] = useState<Date | undefined>();
-  const [reason, setReason] = useState("");
+  const [newName, setNewName] = useState("");
+  // Unsaved edits to section names, by section id.
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
 
-  const closures = useQuery({ queryKey: ["closures"], queryFn: listClosures });
-  const rows = closures.data ?? [];
-  const closedDays = useMemo(
-    () => rows.map((c) => new Date(`${c.day}T00:00`)),
-    [rows],
-  );
-  const todayKey = dayKey(new Date());
-  const upcoming = rows.filter((c) => c.day >= todayKey);
-
-  const close = useMutation({
-    mutationFn: (day: string) => addClosure(day, reason.trim()),
+  const mutation = useMutation({
+    mutationFn: (run: () => Promise<void>) => run(),
+    onSuccess: () => setError(null),
+    onError: (e: unknown) =>
+      setError(e instanceof Error ? e.message : "Something went wrong."),
     onSettled: () => {
-      setPick(undefined);
-      setReason("");
-      void qc.invalidateQueries({ queryKey: ["closures"] });
+      void qc.invalidateQueries({ queryKey: ["gallery_sections"] });
+      void qc.invalidateQueries({ queryKey: ["gallery_items"] });
     },
   });
-  const reopen = useMutation({
-    mutationFn: (day: string) => removeClosure(day),
-    onSettled: () => void qc.invalidateQueries({ queryKey: ["closures"] }),
-  });
+  const busy = mutation.isPending;
 
-  const alreadyClosed = pick ? rows.some((c) => c.day === dayKey(pick)) : false;
+  const move = (index: number, by: -1 | 1) => {
+    const ids = sections.map((sec) => sec.id);
+    const [id] = ids.splice(index, 1);
+    if (!id) return;
+    ids.splice(index + by, 0, id);
+    mutation.mutate(() => saveGallerySectionOrder(ids));
+  };
+
+  const arrowClass =
+    "px-1.5 text-xs leading-none text-[#e5e5e5] transition-colors hover:text-[#ffffff] disabled:opacity-25";
+  const smallButton =
+    "border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.1em] transition-colors disabled:opacity-40";
 
   return (
     <Panel
-      title="Closed days"
-      subtitle="Days the public can't book"
-      count={upcoming.length}
+      title="Gallery Sections"
+      subtitle="Groups on the Gallery page"
+      count={sections.length}
       actions={
         <TabButton active={open} onClick={() => setOpen((o) => !o)}>
-          {open ? "Hide" : "Manage"}
+          {open ? "Hide" : "Manage sections"}
         </TabButton>
       }
     >
       {open && (
-        <div className="grid gap-5 p-5 lg:grid-cols-[auto_minmax(0,1fr)]">
-          <div className="self-start border border-[#333333] bg-[#0a0a0a] p-2">
-            <Calendar
-              mode="single"
-              selected={pick}
-              onSelect={setPick}
-              disabled={{ before: new Date(new Date().setHours(0, 0, 0, 0)) }}
-              modifiers={{ closed: closedDays }}
-              modifiersClassNames={{
-                closed:
-                  "relative after:absolute after:bottom-1 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-[#d98a8a]",
-              }}
+        <div className="space-y-4 p-5">
+          <form
+            className="flex max-w-md gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const name = newName.trim();
+              if (!name) return;
+              mutation.mutate(async () => {
+                await addGallerySection(name, sections.length);
+                setNewName("");
+              });
+            }}
+          >
+            <input
+              type="text"
+              aria-label="New section name"
+              placeholder="New section (e.g. Blackwork)"
+              maxLength={80}
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              className={`${inputClass} mt-0`}
             />
-          </div>
+            <button
+              type="submit"
+              disabled={busy || !newName.trim()}
+              className="shrink-0 border border-[#ffffff] bg-[#ffffff] px-4 py-2 font-display text-xs uppercase tracking-[0.15em] text-black transition-colors hover:bg-[#e0e0e0] disabled:opacity-60"
+            >
+              + Add
+            </button>
+          </form>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-[0.55rem] uppercase tracking-[0.25em] text-[#8a8a8a]">
-                Reason (optional)
-                <input
-                  type="text"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="Holiday, day off…"
-                  className="mt-1 w-full border border-[#3a3a3a] bg-[#0a0a0a] px-2 py-1 text-xs text-[#e5e5e5] outline-none focus:border-[#ffffff]"
-                />
-              </label>
-              <button
-                type="button"
-                disabled={!pick || alreadyClosed || close.isPending}
-                onClick={() => pick && close.mutate(dayKey(pick))}
-                className="mt-2 w-full border border-[#ffffff] bg-[#ffffff] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.1em] text-black transition-colors hover:bg-[#e0e0e0] disabled:opacity-50"
-              >
-                {!pick
-                  ? "Pick a day to close"
-                  : alreadyClosed
-                    ? "Already closed"
-                    : `Close ${format(pick, "EEE d MMM")}`}
-              </button>
-            </div>
-
-            <div>
-              <h3 className="font-display text-xs uppercase tracking-[0.2em] text-[#d4d4d4]">
-                Upcoming closed days
-              </h3>
-              {upcoming.length === 0 ? (
-                <p className="mt-2 text-xs uppercase tracking-[0.2em] text-[#6b6b6b]">
-                  None
-                </p>
-              ) : (
-                <ul className="mt-2 space-y-1.5">
-                  {upcoming.map((c) => (
-                    <li
-                      key={c.day}
-                      className="flex items-center justify-between gap-3 border border-[#333333] bg-[#0a0a0a] px-3 py-2 text-xs"
-                    >
-                      <span className="text-[#e5e5e5]">
-                        {format(new Date(`${c.day}T00:00`), "EEE d MMM yyyy")}
-                        {c.reason && (
-                          <span className="ml-2 text-[#9a9a9a]">
-                            · {c.reason}
-                          </span>
-                        )}
-                      </span>
+          {sections.length === 0 ? (
+            <p className="py-6 text-center text-xs uppercase tracking-[0.3em] text-[#6b6b6b]">
+              No sections yet. The gallery shows one grid.
+            </p>
+          ) : (
+            <ul className="divide-y divide-[#262626] border border-[#333333]">
+              {sections.map((sec, i) => {
+                const draft = drafts[sec.id] ?? sec.name;
+                const renamed =
+                  draft.trim() !== "" && draft.trim() !== sec.name;
+                const count = counts[sec.id] ?? 0;
+                return (
+                  <li
+                    key={sec.id}
+                    className="flex flex-wrap items-center gap-2 bg-[#0a0a0a] px-3 py-2"
+                  >
+                    <div className="flex flex-col gap-1">
                       <button
                         type="button"
-                        disabled={reopen.isPending}
-                        onClick={() => reopen.mutate(c.day)}
-                        className="shrink-0 border border-[#3a3a3a] px-2 py-1 text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#e5e5e5] transition-colors hover:border-[#ffffff] disabled:opacity-50"
+                        aria-label={`Move ${sec.name} up`}
+                        disabled={busy || i === 0}
+                        onClick={() => move(i, -1)}
+                        className={arrowClass}
                       >
-                        Reopen
+                        ▲
                       </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+                      <button
+                        type="button"
+                        aria-label={`Move ${sec.name} down`}
+                        disabled={busy || i === sections.length - 1}
+                        onClick={() => move(i, 1)}
+                        className={arrowClass}
+                      >
+                        ▼
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      aria-label={`Name of ${sec.name}`}
+                      maxLength={80}
+                      value={draft}
+                      onChange={(e) =>
+                        setDrafts((d) => ({ ...d, [sec.id]: e.target.value }))
+                      }
+                      className={`${inputClass} mt-0 min-w-0 flex-1 basis-40`}
+                    />
+                    <span className="w-16 text-center text-[0.6rem] uppercase tracking-[0.2em] text-[#8a8a8a]">
+                      {count} item{count === 1 ? "" : "s"}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={busy || !renamed}
+                      onClick={() =>
+                        mutation.mutate(async () => {
+                          await renameGallerySection(sec.id, draft);
+                          setDrafts(({ [sec.id]: _, ...rest }) => rest);
+                        })
+                      }
+                      className={`${smallButton} border-[#3a3a3a] text-[#ffffff] hover:border-[#8a8a8a]`}
+                    >
+                      Rename
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        const note =
+                          count > 0
+                            ? ` Its ${count} tattoo${count === 1 ? "" : "s"} stay in the gallery, just without a section.`
+                            : "";
+                        if (
+                          window.confirm(
+                            `Delete the "${sec.name}" section?${note}`,
+                          )
+                        ) {
+                          mutation.mutate(() => deleteGallerySection(sec.id));
+                        }
+                      }}
+                      className={`${smallButton} border-[#7a1f1f] text-[#d98a8a] hover:bg-[#7a1f1f] hover:text-[#f2f2f2]`}
+                    >
+                      Delete
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {error && (
+            <p className="border border-[#7a1f1f] bg-[#1a0d0d] px-3 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#d98a8a]">
+              {error}
+            </p>
+          )}
         </div>
       )}
     </Panel>
@@ -1391,15 +1012,17 @@ function Admin() {
     queryKey: ["gallery_items"],
     queryFn: listGallery,
   });
-  const shop = useQuery({ queryKey: ["shop_items"], queryFn: listShop });
-  const bookings = useQuery({ queryKey: ["bookings"], queryFn: listBookings });
+  const sections = useQuery({
+    queryKey: ["gallery_sections"],
+    queryFn: listGallerySections,
+  });
 
   const removeMutation = useMutation({
     mutationFn: ({
       table,
       id,
     }: {
-      table: "recent_work" | "gallery_items" | "shop_items";
+      table: "recent_work" | "gallery_items";
       id: string;
     }) => deleteContent(table, id),
     onMutate: ({ id }) => setPendingId(id),
@@ -1409,41 +1032,26 @@ function Admin() {
     },
   });
 
-  const bookingStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: BookingStatus }) =>
-      updateBookingStatus(id, status),
+  const moveMutation = useMutation({
+    mutationFn: ({ id, sectionId }: { id: string; sectionId: string | null }) =>
+      setGalleryItemSection(id, sectionId),
     onMutate: ({ id }) => setPendingId(id),
     onSettled: () => {
       setPendingId(null);
-      void qc.invalidateQueries({ queryKey: ["bookings"] });
+      void qc.invalidateQueries({ queryKey: ["gallery_items"] });
     },
   });
 
-  const bookingDeleteMutation = useMutation({
-    mutationFn: (id: string) => deleteBooking(id),
-    onMutate: (id) => setPendingId(id),
-    onSettled: () => {
-      setPendingId(null);
-      void qc.invalidateQueries({ queryKey: ["bookings"] });
-    },
-  });
-
-  const bookingAcceptMutation = useMutation({
-    mutationFn: ({
-      id,
-      startIso,
-      durationMin,
-    }: {
-      id: string;
-      startIso: string;
-      durationMin: number;
-    }) => acceptBooking(id, startIso, durationMin),
-    onMutate: ({ id }) => setPendingId(id),
-    onSettled: () => {
-      setPendingId(null);
-      void qc.invalidateQueries({ queryKey: ["bookings"] });
-    },
-  });
+  const sectionList = sections.data ?? [];
+  const sectionName = (id: string | null) =>
+    sectionList.find((sec) => sec.id === id)?.name ?? "No section";
+  const sectionCounts: Record<string, number> = {};
+  for (const item of gallery.data ?? []) {
+    if (item.section_id) {
+      sectionCounts[item.section_id] =
+        (sectionCounts[item.section_id] ?? 0) + 1;
+    }
+  }
 
   return (
     <main className="admin-skin min-h-screen">
@@ -1454,14 +1062,14 @@ function Admin() {
             Admin
           </h1>
           <p className="mt-2 text-[0.65rem] uppercase tracking-[0.3em] text-[#9a9a9a]">
-            Recent work · gallery · shop · bookings
+            Home uploads · gallery uploads · gallery sections
           </p>
         </header>
 
         <div className="space-y-5">
           <ContentPanel
-            title="Recent Work"
-            subtitle="Home page grid"
+            title="Home Uploads"
+            subtitle="Recent Work grid on the home page"
             items={(recentWork.data ?? []).map((r) => ({
               id: r.id,
               image_url: r.image_url,
@@ -1493,17 +1101,23 @@ function Admin() {
           />
 
           <ContentPanel
-            title="Gallery"
-            subtitle="Gallery page grid"
+            title="Gallery Uploads"
+            subtitle="Gallery page"
             items={(gallery.data ?? []).map((r) => ({
               id: r.id,
               image_url: r.image_url,
+              section_id: r.section_id,
               fields: [
                 { label: "Title", value: r.title },
                 { label: "Meta", value: r.meta ?? "" },
+                { label: "Section", value: sectionName(r.section_id) },
                 { label: "Frame", value: r.frame },
               ],
             }))}
+            sectionControls={{
+              sections: sectionList,
+              onMove: (id, sectionId) => moveMutation.mutate({ id, sectionId }),
+            }}
             fields={[
               { name: "title", label: "Title", required: true },
               { name: "meta", label: "Meta (e.g. Ribs · blackwork)" },
@@ -1516,6 +1130,7 @@ function Admin() {
                 meta: v["meta"] ?? "",
                 image_url,
                 frame: (v["frame"] as Frame) ?? "plain",
+                section_id: v["section_id"] || null,
                 ...cropFrom(v),
               });
               await qc.invalidateQueries({ queryKey: ["gallery_items"] });
@@ -1525,59 +1140,7 @@ function Admin() {
             }
           />
 
-          <ContentPanel
-            title="Shop"
-            subtitle="Shop page products"
-            items={(shop.data ?? []).map((r) => ({
-              id: r.id,
-              image_url: r.image_url,
-              fields: [
-                { label: "Name", value: r.name },
-                { label: "Price", value: r.price ?? "" },
-                { label: "Tag", value: r.tag ?? "" },
-                { label: "Description", value: r.description ?? "" },
-                { label: "Frame", value: r.frame },
-              ],
-            }))}
-            fields={[
-              { name: "name", label: "Name", required: true },
-              { name: "price", label: "Price (e.g. ¥3,500)" },
-              { name: "tag", label: "Tag (e.g. New)" },
-              { name: "description", label: "Description" },
-            ]}
-            previewRatio="aspect-[6/5]"
-            pendingId={pendingId}
-            onAdd={async (v, image_url) => {
-              await addShopItem({
-                name: v["name"] ?? "",
-                price: v["price"] ?? "",
-                tag: v["tag"] ?? "",
-                description: v["description"] ?? "",
-                image_url,
-                frame: (v["frame"] as Frame) ?? "plain",
-                ...cropFrom(v),
-              });
-              await qc.invalidateQueries({ queryKey: ["shop_items"] });
-            }}
-            onDelete={(id) =>
-              removeMutation.mutate({ table: "shop_items", id })
-            }
-          />
-
-          <BookingsPanel
-            bookings={bookings.data ?? []}
-            isLoading={bookings.isLoading}
-            pendingId={pendingId}
-            onStatus={(id, status) =>
-              bookingStatusMutation.mutate({ id, status })
-            }
-            onDelete={(id) => bookingDeleteMutation.mutate(id)}
-            onAccept={(id, startIso, durationMin) =>
-              bookingAcceptMutation.mutateAsync({ id, startIso, durationMin })
-            }
-          />
-
-          <ClosuresPanel />
+          <SectionsPanel sections={sectionList} counts={sectionCounts} />
 
           {isMaster && <TeamPanel />}
         </div>

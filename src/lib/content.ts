@@ -61,47 +61,16 @@ export type GalleryItem = ImageCrop & {
   meta: string | null;
   image_url: string;
   frame: Frame;
+  /** The admin-made section it's shown under; null = not in a section. */
+  section_id: string | null;
 };
 
-export type ShopItem = ImageCrop & {
+/** A named group on the Gallery page, made and ordered by admins. */
+export type GallerySection = {
   id: string;
   name: string;
-  price: string | null;
-  tag: string | null;
-  description: string | null;
-  image_url: string;
-  frame: Frame;
+  sort: number;
 };
-
-export const BOOKING_STATUSES = [
-  "new",
-  "contacted",
-  "booked",
-  "declined",
-] as const;
-
-export type BookingStatus = (typeof BOOKING_STATUSES)[number];
-
-export type Booking = {
-  id: string;
-  name: string;
-  email: string;
-  placement: string | null;
-  idea: string | null;
-  status: BookingStatus;
-  created_at: string;
-  /** Chosen appointment slot (ISO). Null for legacy contact-form requests. */
-  starts_at: string | null;
-  /** End of the slot (ISO), kept in sync server-side. */
-  ends_at: string | null;
-  duration_min: number;
-};
-
-/** Length of a single tattoo session, in minutes. */
-export const SESSION_MINUTES = 120;
-
-/** A time range that is already taken — no booker details, safe for the public page. */
-export type BusyRange = { starts_at: string; ends_at: string };
 
 /** Upload an image to the public `media` bucket and return its public URL. */
 export async function uploadMedia(file: File): Promise<string> {
@@ -126,7 +95,8 @@ async function list<T>(table: string, order: string): Promise<T[]> {
 export const listRecentWork = () => list<RecentWork>("recent_work", "sort");
 export const listGallery = () =>
   list<GalleryItem>("gallery_items", "created_at");
-export const listShop = () => list<ShopItem>("shop_items", "created_at");
+export const listGallerySections = () =>
+  list<GallerySection>("gallery_sections", "sort");
 
 export async function addRecentWork(
   input: {
@@ -146,64 +116,19 @@ export async function addGalleryItem(
     meta: string;
     image_url: string;
     frame: Frame;
+    section_id: string | null;
   } & ImageCrop,
 ): Promise<void> {
   const { error } = await supabase.from("gallery_items").insert(input);
   if (error) throw error;
 }
 
-export async function addShopItem(
-  input: {
-    name: string;
-    price: string;
-    tag: string;
-    description: string;
-    image_url: string;
-    frame: Frame;
-  } & ImageCrop,
-): Promise<void> {
-  const { error } = await supabase.from("shop_items").insert(input);
-  if (error) throw error;
-}
-
 export async function deleteContent(
-  table: "recent_work" | "gallery_items" | "shop_items",
+  table: "recent_work" | "gallery_items",
   id: string,
 ): Promise<void> {
   const { error } = await supabase.from(table).delete().eq("id", id);
   if (error) throw error;
-}
-
-// --- bookings --------------------------------------------------------------
-
-/** Public: submit a booking request with a chosen date + time slot. */
-export async function createBooking(input: {
-  name: string;
-  email: string;
-  placement: string;
-  idea: string;
-  /** ISO timestamp of the chosen slot; null keeps the old "just a message" behaviour. */
-  starts_at?: string | null;
-}): Promise<void> {
-  if (!isSupabaseConfigured) {
-    throw new Error(
-      "Booking is not available yet — Supabase isn't configured.",
-    );
-  }
-  const { error } = await supabase.from("bookings").insert({
-    ...input,
-    starts_at: input.starts_at ?? null,
-    duration_min: SESSION_MINUTES,
-  });
-  if (error) {
-    // Exclusion-constraint violation → someone grabbed the slot first.
-    if (error.code === "23P01" || /bookings_no_overlap/.test(error.message)) {
-      throw new Error(
-        "That time was just booked by someone else — please pick another slot.",
-      );
-    }
-    throw error;
-  }
 }
 
 // --- team / roles (master admin only) -----------------------------------
@@ -246,115 +171,58 @@ export async function setUserRole(
   }
 }
 
-// --- studio closures -----------------------------------------------------
+// --- gallery sections ------------------------------------------------------
 
-export type Closure = { day: string; reason: string | null };
-
-/** All closed calendar days (YYYY-MM-DD), soonest first. Public. */
-export async function listClosures(): Promise<Closure[]> {
-  if (!isSupabaseConfigured) return [];
-  const { data, error } = await supabase
-    .from("studio_closures")
-    .select("day, reason")
-    .order("day");
-  if (error) throw error;
-  return (data as Closure[]) ?? [];
-}
-
-/** Admin: close a day so nobody can book it (RLS enforced). */
-export async function addClosure(day: string, reason: string): Promise<void> {
+/** Admin: file a gallery item under a section (null = no section). */
+export async function setGalleryItemSection(
+  id: string,
+  section_id: string | null,
+): Promise<void> {
   const { error } = await supabase
-    .from("studio_closures")
-    .upsert({ day, reason: reason || null });
+    .from("gallery_items")
+    .update({ section_id })
+    .eq("id", id);
   if (error) throw error;
 }
 
-/** Admin: reopen a previously closed day (RLS enforced). */
-export async function removeClosure(day: string): Promise<void> {
+/** Admin: add a section at the end of the list (RLS enforced). */
+export async function addGallerySection(
+  name: string,
+  sort: number,
+): Promise<void> {
   const { error } = await supabase
-    .from("studio_closures")
+    .from("gallery_sections")
+    .insert({ name: name.trim(), sort });
+  if (error) throw error;
+}
+
+export async function renameGallerySection(
+  id: string,
+  name: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("gallery_sections")
+    .update({ name: name.trim() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** Admin: save this order as each section's `sort`. */
+export async function saveGallerySectionOrder(ids: string[]): Promise<void> {
+  const results = await Promise.all(
+    ids.map((id, sort) =>
+      supabase.from("gallery_sections").update({ sort }).eq("id", id),
+    ),
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+}
+
+/** Admin: delete a section. Its tattoos stay in the gallery, just unsectioned. */
+export async function deleteGallerySection(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("gallery_sections")
     .delete()
-    .eq("day", day);
-  if (error) throw error;
-}
-
-/** Busy time ranges between two ISO timestamps (via the SECURITY DEFINER RPC). */
-export async function listBookedRanges(
-  fromIso: string,
-  toIso: string,
-): Promise<BusyRange[]> {
-  if (!isSupabaseConfigured) return [];
-  const { data, error } = await supabase.rpc("booked_slots", {
-    from_ts: fromIso,
-    to_ts: toIso,
-  });
-  if (error) throw error;
-  return (data as BusyRange[]) ?? [];
-}
-
-/** Admin only (RLS enforced): every booking request, newest first. */
-export async function listBookings(): Promise<Booking[]> {
-  if (!isSupabaseConfigured) return [];
-  const { data, error } = await supabase
-    .from("bookings")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data as Booking[]) ?? [];
-}
-
-/** The signed-in user's own booking requests, matched by email (RLS enforced). */
-export async function listMyBookings(email: string): Promise<Booking[]> {
-  if (!isSupabaseConfigured || !email) return [];
-  const { data, error } = await supabase
-    .from("bookings")
-    .select("*")
-    .ilike("email", email)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data as Booking[]) ?? [];
-}
-
-export async function updateBookingStatus(
-  id: string,
-  status: BookingStatus,
-): Promise<void> {
-  const { error } = await supabase
-    .from("bookings")
-    .update({ status })
     .eq("id", id);
   if (error) throw error;
-}
-
-export async function deleteBooking(id: string): Promise<void> {
-  const { error } = await supabase.from("bookings").delete().eq("id", id);
-  if (error) throw error;
-}
-
-/**
- * Admin: confirm a request at a chosen start time + duration. This is what
- * actually reserves the slot — status becomes 'booked' and the DB exclusion
- * constraint blocks it from overlapping any other confirmed booking.
- */
-export async function acceptBooking(
-  id: string,
-  startIso: string,
-  durationMin: number,
-): Promise<void> {
-  const { error } = await supabase
-    .from("bookings")
-    .update({
-      starts_at: startIso,
-      duration_min: durationMin,
-      status: "booked" satisfies BookingStatus,
-    })
-    .eq("id", id);
-  if (error) {
-    if (error.code === "23P01" || /bookings_no_overlap/.test(error.message)) {
-      throw new Error(
-        "That time overlaps another confirmed booking — pick a different time or length.",
-      );
-    }
-    throw error;
-  }
 }

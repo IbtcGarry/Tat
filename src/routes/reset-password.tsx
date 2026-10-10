@@ -71,7 +71,7 @@ function ResetPassword() {
     setBusy(false);
     if (error) return setError(error.message);
     setDone(true);
-    setTimeout(() => void router.navigate({ to: "/account" }), 1200);
+    setTimeout(() => void router.navigate({ to: "/admin" }), 1200);
   }
 
   return (
