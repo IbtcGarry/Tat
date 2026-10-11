@@ -15,14 +15,12 @@ export const Route = createFileRoute("/gallery")({
       { title: "Gallery — Toosh Tattoos" },
       {
         name: "description",
-        content:
-          "Healed and fresh tattoo work from Toosh Tattoos: blackwork, screentone shading, and saturated color pieces.",
+        content: "Toosh Portfolio",
       },
       { property: "og:title", content: "Gallery — Toosh Tattoos" },
       {
         property: "og:description",
-        content:
-          "Blackwork, screentone shading and saturated color tattoo pieces.",
+        content: "Toosh Portfolio",
       },
     ],
   }),

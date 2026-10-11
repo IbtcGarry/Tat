@@ -78,6 +78,14 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   );
 }
 
+// The intro plays once per visit: finishing or skipping it sets this
+// sessionStorage flag, which lasts until the tab is closed.
+const INTRO_SEEN_KEY = "toosh-intro-seen";
+
+// Runs before the page paints, so a refresh doesn't flash the intro before
+// React reads the flag. Loader.css hides #stage while this attribute is set.
+const introSeenScript = `try{if(sessionStorage.getItem("${INTRO_SEEN_KEY}"))document.documentElement.setAttribute("data-intro-seen","")}catch(e){}`;
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   {
     head: () => ({
@@ -87,7 +95,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { title: "Toosh Tattoos — Tattoo Studio" },
         {
           name: "description",
-          content: "Bizarre, bold, unbreakable tattoo work from Toosh Tattoos.",
+          content: "Toosh Portfolio",
         },
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary_large_image" },
@@ -110,6 +118,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { rel: "icon", href: "/kencat.png", type: "image/png" },
         { rel: "apple-touch-icon", href: "/kencat.png" },
       ],
+      scripts: [{ children: introSeenScript }],
     }),
 
     shellComponent: RootShell,
@@ -121,7 +130,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    // The script above may add data-intro-seen before hydration.
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -137,8 +147,27 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const [hasFinishedIntro, setHasFinishedIntro] = useState(false);
 
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(INTRO_SEEN_KEY)) setHasFinishedIntro(true);
+    } catch {
+      // Storage blocked (e.g. some private modes): just play the intro.
+    }
+  }, []);
+
   if (!hasFinishedIntro) {
-    return <Loader onComplete={() => setHasFinishedIntro(true)} />;
+    return (
+      <Loader
+        onComplete={() => {
+          try {
+            sessionStorage.setItem(INTRO_SEEN_KEY, "1");
+          } catch {
+            // Storage blocked: the intro will play again next time.
+          }
+          setHasFinishedIntro(true);
+        }}
+      />
+    );
   }
 
   return (

@@ -193,3 +193,9 @@
     opacity: 0;
   }
 }
+
+/* Already watched this visit (set by an inline script in __root.tsx before
+   paint): keep the intro hidden while React catches up. */
+html[data-intro-seen] #stage {
+  display: none;
+}

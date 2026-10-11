@@ -12,8 +12,7 @@ export const Route = createFileRoute("/")({
       { title: "Toosh Tattoos — Bizarre Tattoo Studio" },
       {
         name: "description",
-        content:
-          "Toosh Tattoos is a tattoo studio for bold outlines, screentone shading and unbreakable design.",
+        content: "Toosh Portfolio",
       },
       {
         property: "og:title",
@@ -21,8 +20,7 @@ export const Route = createFileRoute("/")({
       },
       {
         property: "og:description",
-        content:
-          "Bold outlines, screentone shading, unbreakable design. Tattoo studio.",
+        content: "Toosh Portfolio",
       },
     ],
   }),
