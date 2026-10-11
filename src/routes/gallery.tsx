@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -9,7 +9,18 @@ import {
   type GalleryItem,
 } from "@/lib/content";
 
+type GallerySearch = {
+  /** Which tab is open: a section id, "more", or absent for All. */
+  section?: string | undefined;
+};
+
 export const Route = createFileRoute("/gallery")({
+  validateSearch: (search: Record<string, unknown>): GallerySearch => ({
+    section:
+      typeof search["section"] === "string" && search["section"]
+        ? search["section"]
+        : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Gallery — Toosh Tattoos" },
@@ -28,6 +39,7 @@ export const Route = createFileRoute("/gallery")({
 });
 
 function Gallery() {
+  const { section: selected } = Route.useSearch();
   const { data: pieces = [], isLoading } = useQuery({
     queryKey: ["gallery_items"],
     queryFn: listGallery,
@@ -54,6 +66,10 @@ function Gallery() {
     },
   ].filter((g) => g.items.length > 0);
 
+  // An unknown or now-empty tab (e.g. an old link) falls back to All.
+  const active = groups.find((g) => g.id === selected) ?? null;
+  const shown = active ? [active] : groups;
+
   return (
     <main className="halftone bg-background">
       <div className="mx-auto max-w-6xl px-5 py-20">
@@ -69,26 +85,24 @@ function Gallery() {
             aria-label="Gallery sections"
             className="mt-10 flex flex-wrap gap-2"
           >
+            <SectionTab label="All" active={!active} />
             {groups.map((g) => (
-              <a
+              <SectionTab
                 key={g.id}
-                href={`#section-${g.id}`}
-                className="border-4 border-ink bg-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
-              >
-                {g.name}
-              </a>
+                label={g.name ?? "More work"}
+                section={g.id}
+                count={g.items.length}
+                active={active?.id === g.id}
+              />
             ))}
           </nav>
         )}
 
-        {groups.length > 0 ? (
-          groups.map((g) => (
-            <section
-              key={g.id}
-              id={`section-${g.id}`}
-              className="mt-14 scroll-mt-24"
-            >
-              {g.name && (
+        {shown.length > 0 ? (
+          shown.map((g) => (
+            <section key={g.id} className="mt-14">
+              {/* A single open tab already names the section. */}
+              {g.name && !active && (
                 <h2 className="text-[clamp(1.75rem,5vw,3rem)] text-primary">
                   {g.name}
                 </h2>
@@ -105,6 +119,36 @@ function Gallery() {
         )}
       </div>
     </main>
+  );
+}
+
+function SectionTab({
+  label,
+  section,
+  count,
+  active,
+}: {
+  label: string;
+  section?: string;
+  count?: number;
+  active: boolean;
+}) {
+  return (
+    <Link
+      to="/gallery"
+      search={section ? { section } : {}}
+      // Keep the page where it is when switching tabs.
+      resetScroll={false}
+      aria-current={active ? "page" : undefined}
+      className={`border-4 border-ink px-3 py-1.5 text-xs font-bold uppercase tracking-[0.2em] transition-colors ${
+        active
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted text-foreground hover:bg-primary hover:text-primary-foreground"
+      }`}
+    >
+      {label}
+      {count !== undefined && <span className="ml-2 opacity-60">{count}</span>}
+    </Link>
   );
 }
 
