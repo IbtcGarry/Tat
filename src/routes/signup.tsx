@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { USERNAME_PATTERN, usernameToEmail } from "@/lib/username";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -23,7 +24,6 @@ export const Route = createFileRoute("/signup")({
 
 const fields = [
   { id: "username", label: "Username", type: "text", autoComplete: "username" },
-  { id: "email", label: "Email", type: "email", autoComplete: "email" },
   {
     id: "password",
     label: "Password",
@@ -33,7 +33,7 @@ const fields = [
 ] as const;
 
 function SignUp() {
-  const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [form, setForm] = useState({ username: "", password: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -43,12 +43,20 @@ function SignUp() {
       return;
     }
 
+    const username = form.username.trim();
+    if (!USERNAME_PATTERN.test(username)) {
+      setError(
+        "Usernames are 3–32 letters, numbers, dots, dashes or underscores.",
+      );
+      return;
+    }
+
     setStatus("loading");
     setError(null);
 
-    const { username, email, password } = form;
+    const { password } = form;
     const { error } = await supabase.auth.signUp({
-      email,
+      email: usernameToEmail(username),
       password,
       options: {
         data: { username }, // becomes raw_user_meta_data
@@ -74,8 +82,8 @@ function SignUp() {
             ACCOUNT
           </h1>
           <p className="mt-8 max-w-md text-lg text-foreground/90">
-            An account lets you request sessions faster and keep a record of
-            every piece we've done. Pick a username — it's how we'll know you.
+            For new members of the Toosh team. Pick a username and password,
+            then ask the master admin to give your account admin access.
           </p>
         </div>
 
@@ -98,6 +106,8 @@ function SignUp() {
                 id={f.id}
                 type={f.type}
                 autoComplete={f.autoComplete}
+                autoCapitalize="none"
+                spellCheck={false}
                 required
                 minLength={f.id === "password" ? 6 : undefined}
                 value={form[f.id]}
@@ -124,7 +134,7 @@ function SignUp() {
           )}
           {status === "done" && (
             <p className="border-4 border-ink bg-background px-4 py-3 text-sm font-bold uppercase tracking-[0.15em] text-foreground">
-              Check your email to confirm your account.
+              Account created. Ask the master admin to give you access.
             </p>
           )}
         </form>

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/lib/use-auth";
+import { emailToUsername, usernameToEmail } from "@/lib/username";
 import {
   FRAME_OPTIONS,
   addGalleryItem,
@@ -860,11 +861,11 @@ const ROLE_STYLE: Record<string, string> = {
   user: "text-[#8a8a8a] border-[#3a3a3a]",
 };
 
-/** Master-admin-only: grant / revoke admin on other accounts by email. */
+/** Master-admin-only: grant / revoke admin on other accounts by username. */
 function TeamPanel() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
   const team = useQuery({ queryKey: ["team"], queryFn: listTeam });
@@ -879,7 +880,7 @@ function TeamPanel() {
     onMutate: () => setErr(null),
     onError: (e: unknown) =>
       setErr(e instanceof Error ? e.message : "Could not change role."),
-    onSuccess: () => setEmail(""),
+    onSuccess: () => setUsername(""),
     onSettled: () => void qc.invalidateQueries({ queryKey: ["team"] }),
   });
 
@@ -900,24 +901,27 @@ function TeamPanel() {
             className="flex flex-wrap items-end gap-2"
             onSubmit={(e) => {
               e.preventDefault();
-              const v = email.trim();
-              if (v) mutate.mutate({ email: v, role: "admin" });
+              const v = username.trim();
+              if (v)
+                mutate.mutate({ email: usernameToEmail(v), role: "admin" });
             }}
           >
             <label className="flex-1 text-[0.55rem] uppercase tracking-[0.25em] text-[#8a8a8a]">
-              Grant admin by email
+              Grant admin by username
               <input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="person@example.com"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="their username"
                 className="mt-1 w-full border border-[#3a3a3a] bg-[#0a0a0a] px-2 py-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#ffffff]"
               />
             </label>
             <button
               type="submit"
-              disabled={mutate.isPending || !email.trim()}
+              disabled={mutate.isPending || !username.trim()}
               className="border border-[#ffffff] bg-[#ffffff] px-4 py-1.5 text-xs font-bold uppercase tracking-[0.1em] text-black transition-colors hover:bg-[#e0e0e0] disabled:opacity-50"
             >
               {mutate.isPending ? "…" : "Grant"}
@@ -946,10 +950,9 @@ function TeamPanel() {
                   className="flex flex-wrap items-center justify-between gap-2 border border-[#333333] bg-[#0a0a0a] px-3 py-2 text-xs"
                 >
                   <div className="min-w-0">
-                    <span className="break-all text-[#e5e5e5]">{m.email}</span>
-                    {m.username && (
-                      <span className="ml-2 text-[#6b6b6b]">@{m.username}</span>
-                    )}
+                    <span className="break-all text-[#e5e5e5]">
+                      {emailToUsername(m.email)}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span

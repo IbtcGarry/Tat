@@ -161,7 +161,7 @@ export async function setUserRole(
     const m = error.message || "";
     if (/no account/i.test(m))
       throw new Error(
-        "No account with that email — they need to sign up first.",
+        "No account with that username — they need to sign up first.",
       );
     if (/is a master admin/i.test(m))
       throw new Error("That account is a master admin — change it in SQL.");

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { usernameToEmail } from "@/lib/username";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/login")({
 });
 
 const fields = [
-  { id: "email", label: "Email", type: "email", autoComplete: "email" },
+  { id: "username", label: "Username", type: "text", autoComplete: "username" },
   {
     id: "password",
     label: "Password",
@@ -33,7 +34,7 @@ const fields = [
 
 function Login() {
   const router = useRouter();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ username: "", password: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -46,14 +47,18 @@ function Login() {
     setStatus("loading");
     setError(null);
 
-    const { email, password } = form;
+    const { username, password } = form;
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: usernameToEmail(username),
       password,
     });
 
     if (error) {
-      setError(error.message);
+      setError(
+        /invalid login credentials/i.test(error.message)
+          ? "Wrong username or password."
+          : error.message,
+      );
       setStatus("idle");
       return;
     }
@@ -102,6 +107,8 @@ function Login() {
                 id={f.id}
                 type={f.type}
                 autoComplete={f.autoComplete}
+                autoCapitalize="none"
+                spellCheck={false}
                 required
                 value={form[f.id]}
                 onChange={(e) =>
@@ -119,13 +126,6 @@ function Login() {
           >
             {status === "loading" ? "Logging in…" : "Log in"}
           </button>
-
-          <Link
-            to="/forgot-password"
-            className="block text-center text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground underline"
-          >
-            Forgot your password?
-          </Link>
 
           {error && (
             <p className="border-4 border-ink bg-destructive px-4 py-3 text-sm font-bold uppercase tracking-[0.15em] text-destructive-foreground">
