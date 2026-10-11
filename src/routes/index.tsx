@@ -57,13 +57,21 @@ function Index() {
           <p className="mt-6 max-w-xl text-base text-foreground/90 sm:text-lg">
             TATTOOS IN CHICAGO
           </p>
-          <div className="mt-9">
+          <div className="mt-9 flex flex-wrap gap-4 sm:gap-6">
             <Link
               to="/gallery"
               className="inline-flex border-4 border-ink bg-primary px-6 py-3.5 font-display text-base uppercase text-primary-foreground shadow-[8px_8px_0_0_var(--ink)] transition-transform hover:translate-x-1 hover:translate-y-1 hover:shadow-[4px_4px_0_0_var(--ink)] sm:px-8 sm:py-4 sm:text-lg sm:shadow-[10px_10px_0_0_var(--ink)]"
             >
               See the work
             </Link>
+            <a
+              href="https://www.instagram.com/tooshtattoos/?hl=en"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex border-4 border-ink bg-background px-6 py-3.5 font-display text-base uppercase text-primary shadow-[8px_8px_0_0_var(--ink)] transition-transform hover:translate-x-1 hover:translate-y-1 hover:shadow-[4px_4px_0_0_var(--ink)] sm:px-8 sm:py-4 sm:text-lg sm:shadow-[10px_10px_0_0_var(--ink)]"
+            >
+              Instagram
+            </a>
           </div>
         </div>
       </section>
