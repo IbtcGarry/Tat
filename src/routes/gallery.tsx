@@ -77,7 +77,7 @@ function Gallery() {
           GALLERY
         </h1>
         <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-          OPEN TO CHANGE I DIDNT KNOW WHAT TO PUT HERE
+          PEEP THE PROGRESS
         </p>
 
         {groups.length > 1 && (

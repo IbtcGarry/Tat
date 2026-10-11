@@ -174,7 +174,7 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-10">
         <p className="font-jojo text-2xl sm:text-3xl">TOOSH TATTOOS</p>
         <p className="text-sm uppercase tracking-[0.2em] opacity-80">
-          OPEN TO CHANGE I DIDNT KNOW WHAT TO PUT HERE
+          PEEP THE PROGRESS
         </p>
         {/* Visitors don't need accounts; this is the artists' way in. */}
         <Link
